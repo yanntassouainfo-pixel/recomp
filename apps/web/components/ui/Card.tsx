@@ -12,7 +12,7 @@ export function accentColor(a: Accent) { return ACCENT[a]; }
 
 export function Card({ title, kicker, accent = 'none', right, children, className, emphasized, style }: { title?: ReactNode; kicker?: string; accent?: Accent; right?: ReactNode; children?: ReactNode; className?: string; emphasized?: boolean; style?: React.CSSProperties }) {
   return (
-    <section className={cx('card p-5 md:p-6 flex flex-col gap-4 relative overflow-hidden', emphasized && 'ring-1', className)} style={{ ...(emphasized ? { boxShadow: `0 0 0 1px ${ACCENT[accent]}33, var(--shadow-1)` } : {}), ...style }}>
+    <section data-accent={accent !== 'none' ? accent : undefined} data-emphasized={emphasized ? 'true' : undefined} className={cx('card p-5 md:p-6 flex flex-col gap-4 relative overflow-hidden', className)} style={{ ...(accent !== 'none' ? ({ '--card-accent': ACCENT[accent] } as React.CSSProperties) : {}), ...style }}>
       {(title || kicker || right) && (
         <header className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">

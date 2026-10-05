@@ -5,6 +5,7 @@ import type { AppMode, Equipment, FoodCulture, Goal, NutritionPrecision, Occupat
 import { Chip, Segmented } from '@/components/ui/Primitives';
 import { today, useStore } from '@/lib/store';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 const VISUAL: { v: VisualGoal; l: string }[] = [
   { v: 'leaner', l: 'Plus sec' }, { v: 'athletic', l: 'Plus athlétique' }, { v: 'bigger', l: 'Plus massif' }, { v: 'defined', l: 'Plus dessiné' },
@@ -158,7 +159,10 @@ export default function Onboarding() {
     <div className="min-h-dvh flex flex-col">
       <header className="max-w-2xl w-full mx-auto px-5 h-16 flex items-center justify-between">
         <span className="font-bold tracking-tight">RECOMP</span>
-        <div className="flex gap-1">{steps.map((_, i) => <span key={i} className="h-1.5 w-6 rounded-full transition-colors" style={{ background: i <= step ? 'var(--ink)' : 'var(--line)' }} />)}</div>
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1">{steps.map((_, i) => <span key={i} className="h-1.5 w-6 rounded-full transition-colors" style={{ background: i <= step ? 'var(--accent-body)' : 'var(--line)' }} />)}</div>
+          <ThemeToggle />
+        </div>
       </header>
       <main className="max-w-2xl w-full mx-auto px-5 py-6 flex-1 rise" key={step}>{steps[step]}</main>
       <footer className="max-w-2xl w-full mx-auto px-5 py-5 flex items-center justify-between gap-3 sticky bottom-0 glass md:bg-transparent md:border-0">

@@ -73,6 +73,20 @@
 }
 
 html, body { background: var(--bg); color: var(--ink); }
+/* Fond : maillage de couleurs très doux, fixe, par-dessus la couleur de base */
+body { position: relative; min-height: 100dvh; }
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(60% 50% at 8% 0%, color-mix(in srgb, var(--accent-vitality) 16%, transparent), transparent 70%),
+    radial-gradient(50% 45% at 100% 10%, color-mix(in srgb, var(--accent-body) 14%, transparent), transparent 70%),
+    radial-gradient(45% 40% at 60% 100%, color-mix(in srgb, var(--accent-recovery) 12%, transparent), transparent 70%);
+}
+:root[data-theme="dark"] body::before, :root:not([data-theme="light"]) body::before { opacity: 0.8; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) body::before { opacity: 1; } }
+.text-gradient { background: linear-gradient(100deg, var(--accent-fat), var(--accent-body) 55%, var(--accent-muscle)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.btn-accent { background: linear-gradient(110deg, var(--accent-fat), var(--accent-vitality)); color: #0b1a14; }
+.btn-accent:hover { opacity: 0.94; }
 body { font-family: var(--font-sans); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
 * { border-color: var(--line); }
 .tnum { font-variant-numeric: tabular-nums; }
@@ -83,6 +97,9 @@ body { font-family: var(--font-sans); font-size: 15px; line-height: 1.5; -webkit
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-1);
 }
+.card[data-accent] { background: linear-gradient(160deg, color-mix(in srgb, var(--card-accent) 9%, var(--surface)) 0%, var(--surface) 42%); }
+.card[data-accent][data-emphasized="true"] { background: linear-gradient(160deg, color-mix(in srgb, var(--card-accent) 18%, var(--surface)) 0%, color-mix(in srgb, var(--card-accent) 4%, var(--surface)) 60%); border-color: color-mix(in srgb, var(--card-accent) 35%, var(--line)); }
+.card[data-accent] .label { color: color-mix(in srgb, var(--card-accent) 75%, var(--ink)); }
 .card-2 { background: var(--surface-2); border-radius: var(--radius-ctl); }
 .glass { background: var(--glass); backdrop-filter: saturate(160%) blur(18px); -webkit-backdrop-filter: saturate(160%) blur(18px); border: 1px solid var(--line); }
 
@@ -103,7 +120,7 @@ textarea.input { height: auto; padding: 12px 14px; }
 
 .chip { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 500; background: var(--surface-2); color: var(--ink-2); border: 1px solid transparent; cursor: pointer; transition: all 160ms var(--ease); }
 .chip:hover { border-color: var(--ink-3); }
-.chip[data-on="true"] { background: var(--ink); color: var(--bg); }
+.chip[data-on="true"] { background: var(--accent-body); color: #fff; border-color: transparent; }
 
 .label { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
 
