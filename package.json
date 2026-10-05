@@ -1,0 +1,18 @@
+{
+  "name": "recomp",
+  "private": true,
+  "version": "0.1.0",
+  "description": "RECOMP — Coach de recomposition corporelle adaptatif (web + mobile)",
+  "workspaces": [
+    "packages/*",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w apps/web",
+    "build": "npm run build -w apps/web",
+    "test": "npm run test -w packages/engine",
+    "typecheck": "npm run typecheck -w packages/engine && npm run typecheck -w apps/web",
+    "mobile": "cd apps/mobile && npx expo start"
+  },
+  "engines": { "node": ">=20" }
+}

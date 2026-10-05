@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "RECOMP",
+    "slug": "recomp",
+    "scheme": "recomp",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": { "supportsTablet": false, "bundleIdentifier": "app.recomp.mobile", "infoPlist": { "NSCameraUsageDescription": "Photos de suivi corporel, facultatives, stockées dans ton espace privé." } },
+    "android": { "package": "app.recomp.mobile" },
+    "plugins": ["expo-router"],
+    "experiments": { "typedRoutes": true }
+  }
+}
