@@ -33,6 +33,15 @@ export default function Home() {
             <Card style={{ flex: 1 }} kicker="Poids 7 j"><Big value={w.length ? w[w.length - 1]!.value.toFixed(1) : '—'} unit="kg" /></Card>
             <Card style={{ flex: 1 }} kicker="Vitalité"><Big value={c.vitality.score} unit="/10" /></Card>
           </View>
+          {c.currentWeek && c.currentPhase && c.weekSummary && (
+            <Card accent={ACCENT.body} kicker={`Programme · semaine ${c.currentWeek.weekNumber}/${c.plan.weeksTotal}`} title={`${c.currentPhase.name} — ${c.currentPhase.focus}`}>
+              <View style={{ flexDirection: 'row', gap: 4 }}>
+                {c.plan.phases.map((p) => <View key={p.id} style={{ flex: p.weeks, height: 6, borderRadius: 3, backgroundColor: ACCENT.body, opacity: p.id === c.currentPhase!.id ? 1 : 0.3 }} />)}
+              </View>
+              <Body muted>{c.weekSummary.sessionsDone}/{c.weekSummary.sessionsPlanned} séances cette semaine{c.weekSummary.nextSession ? ` · prochaine : ${c.weekSummary.nextSession.name} le ${c.weekSummary.nextSession.date.slice(8)}` : ''}</Body>
+              {c.weekSummary.pending.length > 0 && <Body muted>À faire : {c.weekSummary.pending.join(', ')}.</Body>}
+            </Card>
+          )}
           <Card accent={ACCENT.consistency} kicker="Ton plan du jour" title="Les 3 choses qui comptent">
             {c.brief.topThree.map((x, i) => <Body key={x}>{i + 1}. {x}</Body>)}
           </Card>

@@ -1,6 +1,6 @@
 import type { EvidenceId, ISODate, UserState } from '../types';
 import { addDays, inWindow, linearTrend, mean, round } from '../stats';
-import { checkinsIn, sessionAdherence, strengthSeries, waistSeries, weightRolling } from '../scores';
+import { checkinsIn, sessionAdherence, strengthDelta28d, waistDelta28d, weightRolling } from '../scores';
 import { detectPlateau } from './plateau';
 
 export interface ReviewItem {
@@ -44,9 +44,8 @@ export function weeklyReview(state: UserState, today: ISODate): WeeklyReview {
   const weightAvg = wThis.length ? round(mean(wThis.map((p) => p.value)), 1) : null;
   const weightDelta = wThis.length && wPrev.length ? round(mean(wThis.map((p) => p.value)) - mean(wPrev.map((p) => p.value)), 1) : null;
 
-  const waist = inWindow(waistSeries(state), win28, to);
-  const waistDelta = waist.length >= 2 ? round(waist[waist.length - 1]!.value - waist[0]!.value, 1) : null;
-  const strTrend = linearTrend(inWindow(strengthSeries(state), win28, to), 0.2);
+  const waistDelta = waistDelta28d(state, to);
+  const strTrend = strengthDelta28d(state, to);
   const strengthDeltaPct = strTrend ? round(strTrend.delta, 1) : null;
   const adherence = sessionAdherence(state, prevFrom, to);
   const cks = checkinsIn(state, prevFrom, to);

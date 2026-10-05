@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { EVIDENCE, EVIDENCE_LABEL, type EvidenceId, type EvidenceLevel, type Explanation } from '@recomp/engine';
 import { HelpCircle, X } from 'lucide-react';
 import { cx } from '@/lib/format';
@@ -24,6 +24,13 @@ export function EvidenceBadge({ id, level, className }: { id?: EvidenceId; level
 /** WHY ENGINE — bouton « Pourquoi ? » qui ouvre l'explication + la fiche de preuve. */
 export function WhyButton({ explanation, evidenceId, label = 'Pourquoi ?', compact }: { explanation?: Explanation | { context?: string; logic: string; expectedBenefit?: string }; evidenceId?: EvidenceId; label?: string; compact?: boolean }) {
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
+  }, [open]);
   const eid = evidenceId ?? (explanation && 'evidenceId' in explanation ? explanation.evidenceId : undefined);
   const ev = eid ? EVIDENCE[eid] : null;
   return (
@@ -33,10 +40,10 @@ export function WhyButton({ explanation, evidenceId, label = 'Pourquoi ?', compa
       </button>
       {open && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-6 bg-black/30" onClick={() => setOpen(false)}>
-          <div className="card w-full md:max-w-lg max-h-[85vh] overflow-auto p-6 rounded-b-none md:rounded-b-[var(--radius-card)] rise" onClick={(e) => e.stopPropagation()}>
+          <div role="dialog" aria-modal="true" aria-label="Explication" className="card w-full md:max-w-lg max-h-[85vh] overflow-auto p-6 rounded-b-none md:rounded-b-[var(--radius-card)] rise" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between gap-4 mb-4">
-              <h3 className="font-bold text-lg">{label.replace(/\?$/, '')} — explication</h3>
-              <button className="btn btn-ghost btn-sm -mr-2" onClick={() => setOpen(false)} aria-label="Fermer"><X size={18} /></button>
+              <h2 className="font-bold text-lg">{label.replace(/\?$/, '')} — explication</h2>
+              <button autoFocus className="btn btn-ghost btn-sm -mr-2" onClick={() => setOpen(false)} aria-label="Fermer"><X size={18} /></button>
             </div>
             {explanation && (
               <div className="space-y-3 text-[15px]">

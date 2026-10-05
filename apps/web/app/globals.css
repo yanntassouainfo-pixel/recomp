@@ -6,7 +6,7 @@
   --surface-2: #efeee9;
   --ink: #121417;
   --ink-2: #5b6168;
-  --ink-3: #8a9097;
+  --ink-3: #6b7178;
   --line: #e4e2db;
   --accent-body: #5b5fef;
   --accent-muscle: #f06a4d;
@@ -31,7 +31,7 @@
     --surface-2: #1d2126;
     --ink: #f2f2ee;
     --ink-2: #a0a6ad;
-    --ink-3: #6d737a;
+    --ink-3: #8d939a;
     --line: #262b31;
     --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px -16px rgba(0, 0, 0, 0.6);
     --glass: rgba(22, 25, 29, 0.72);
@@ -44,7 +44,7 @@
   --surface-2: #1d2126;
   --ink: #f2f2ee;
   --ink-2: #a0a6ad;
-  --ink-3: #6d737a;
+  --ink-3: #8d939a;
   --line: #262b31;
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px -16px rgba(0, 0, 0, 0.6);
   --glass: rgba(22, 25, 29, 0.72);
@@ -116,6 +116,7 @@ body { font-family: var(--font-sans); font-size: 15px; line-height: 1.5; -webkit
 
 .input { width: 100%; height: 46px; padding: 0 14px; border-radius: var(--radius-ctl); background: var(--surface-2); border: 1px solid transparent; color: var(--ink); outline: none; transition: border-color 160ms; }
 .input:focus { border-color: var(--ink-3); }
+.input:focus-visible, .btn:focus-visible, .chip:focus-visible, a:focus-visible, button:focus-visible { outline: 2px solid var(--accent-body); outline-offset: 2px; }
 textarea.input { height: auto; padding: 12px 14px; }
 
 .chip { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 500; background: var(--surface-2); color: var(--ink-2); border: 1px solid transparent; cursor: pointer; transition: all 160ms var(--ease); }

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Check } from 'lucide-react';
-import type { DailyCheckin } from '@recomp/engine';
+import { addDays, type DailyCheckin } from '@recomp/engine';
 import { Card, Stat, accentColor } from '@/components/ui/Card';
 import { ScoreRing } from '@/components/ui/ScoreRing';
 import { Sparkline } from '@/components/ui/Charts';
@@ -10,7 +10,7 @@ import { Alerts, Sheet, SliderField, TrendBadge } from '@/components/ui/Primitiv
 import { EvidenceBadge, WhyButton } from '@/components/ui/Evidence';
 import { useComputed } from '@/lib/useComputed';
 import { today, useStore } from '@/lib/store';
-import { fmtDateLong } from '@/lib/format';
+import { cx, fmtDateLong } from '@/lib/format';
 
 export default function Home() {
   const { state, computed: c } = useComputed();
@@ -25,9 +25,9 @@ export default function Home() {
   const w = c.series.weightRolling;
   const wDelta28 = w.length > 1 ? w[w.length - 1]!.value - (w.find((x) => x.date >= addDays(today(), -28))?.value ?? w[0]!.value) : 0;
   const waist = c.series.waist;
-  const waistDelta = waist.length > 1 ? waist[waist.length - 1]!.value - (waist.find((x) => x.date >= addDays(today(), -28))?.value ?? waist[0]!.value) : 0;
+  const waistDelta = c.review.metrics.waistDelta ?? 0;
   const str = c.series.strength;
-  const strDelta = str.length > 1 ? str[str.length - 1]!.value - (str.find((x) => x.date >= addDays(today(), -28))?.value ?? str[0]!.value) : 0;
+  const strDelta = c.review.metrics.strengthDeltaPct ?? 0;
   const adherence = c.review.metrics.adherence;
 
   const cards: Record<string, React.ReactNode> = {
@@ -108,9 +108,9 @@ export default function Home() {
           <ScoreRing value={c.bcs.score} size={96} stroke={9} color={accentColor('fat')} label="Body score" />
           <div className="min-w-0"><div className="label">Composition</div><div className="text-sm text-ink-2 mt-1">{c.bcs.trend === 'improving' ? 'En amélioration' : c.bcs.trend === 'stable' ? 'Stable' : c.bcs.trend === 'worsening' ? 'En retrait' : 'Données insuffisantes'}</div></div>
         </div>
-        <Kpi label="Tour de taille" value={waist.length ? waist[waist.length - 1]!.value : '—'} unit="cm" badge={<TrendBadge delta={waistDelta} unit=" cm" goodWhen="down" />} data={waist.slice(-10)} color={accentColor('fat')} />
-        <Kpi label="Poids (7 j)" value={w.length ? w[w.length - 1]!.value.toFixed(1) : '—'} unit="kg" badge={<TrendBadge delta={wDelta28} unit=" kg" goodWhen="neutral" />} data={w.slice(-28)} color={accentColor('body')} />
-        <Kpi label="Force" value={str.length ? str[str.length - 1]!.value.toFixed(0) : '—'} unit="idx" badge={<TrendBadge delta={strDelta} unit=" %" goodWhen="up" />} data={str.slice(-12)} color={accentColor('muscle')} />
+        <Kpi label="Tour de taille · 4 sem." value={waist.length ? waist[waist.length - 1]!.value : '—'} unit="cm" badge={<TrendBadge delta={waistDelta} unit=" cm" goodWhen="down" />} data={waist.slice(-10)} color={accentColor('fat')} />
+        <Kpi label="Poids (moy. 7 j) · 4 sem." value={w.length ? w[w.length - 1]!.value.toFixed(1) : '—'} unit="kg" badge={<TrendBadge delta={wDelta28} unit=" kg" goodWhen="neutral" />} data={w.slice(-28)} color={accentColor('body')} />
+        <Kpi label="Force · 4 sem." value={str.length ? str[str.length - 1]!.value.toFixed(0) : '—'} unit="idx" badge={<TrendBadge delta={strDelta} unit=" %" goodWhen="up" />} data={str.slice(-12)} color={accentColor('muscle')} />
         <div className="card p-5"><div className="label mb-2">Vitalité · Constance</div><div className="flex items-end gap-4 flex-wrap"><Stat size="md" value={c.vitality.score.toFixed(1)} unit="/10" /><Stat size="md" value={adherence === null ? '—' : Math.round(adherence * 100)} unit="%" /></div><div className="text-xs text-ink-3 mt-2">{c.vitality.headline}</div></div>
       </section>
 
@@ -131,6 +131,18 @@ export default function Home() {
       </section>
 
       <section className="grid md:grid-cols-2 gap-4 rise rise-4">
+        {c.currentWeek && c.currentPhase && c.weekSummary && (
+          <Card kicker={`Programme · semaine ${c.currentWeek.weekNumber}/${c.plan.weeksTotal}`} title={`${c.currentPhase.name} — ${c.currentPhase.focus}`} accent="body" right={<Link href="/app/plan" className="text-sm font-medium text-ink-2 hover:text-ink">Planning</Link>}>
+            <div className="grid grid-cols-7 gap-1">
+              {Array.from({ length: 7 }, (_, i) => addDays(c.currentWeek!.startDate, i)).map((d, i) => {
+                const s = c.currentWeek!.sessions.find((x) => x.date === d);
+                const done = s && state.sessions.some((x) => x.date === d && x.completed);
+                return <div key={d} className={cx('rounded-lg p-1.5 text-center text-[11px]', d === today() ? 'ring-2 ring-[var(--accent-body)]' : '', s ? 'card-2' : 'opacity-50')}><div className="text-ink-3 uppercase">{['L', 'M', 'M', 'J', 'V', 'S', 'D'][i]}</div><div className={cx('font-semibold truncate', done && 'text-[var(--accent-vitality)]')}>{s ? (done ? '✓' : s.name.replace('Full Body ', 'FB ')) : c.currentWeek!.measurementDate === d ? 'Mesures' : '—'}</div></div>;
+              })}
+            </div>
+            <p className="text-sm text-ink-2">{c.weekSummary.sessionsDone}/{c.weekSummary.sessionsPlanned} séances faites{c.weekSummary.pending.length ? ` · à faire : ${c.weekSummary.pending.join(', ')}` : ''}.</p>
+          </Card>
+        )}
         <Card kicker="Cette semaine" title="Micro-habitudes" accent="consistency">
           <ul className="space-y-2">{c.habits.map((h) => <li key={h.id} className="flex items-start gap-3 text-sm"><Check size={16} className="mt-0.5 text-ink-3" /><div><div className="font-medium">{h.text}</div><div className="text-ink-2">{h.why}</div></div></li>)}</ul>
         </Card>
@@ -178,4 +190,3 @@ function Kpi({ label, value, unit, badge, data, color }: { label: string; value:
   );
 }
 
-function addDays(iso: string, n: number) { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }

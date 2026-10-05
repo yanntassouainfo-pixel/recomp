@@ -1,6 +1,7 @@
 'use client';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import type { SetLog } from '@recomp/engine';
 import {
   buildDemoState,
   toISODate,
@@ -21,6 +22,9 @@ export interface ChatMsg { role: 'user' | 'assistant'; content: string; meta?: {
 interface Store {
   state: UserState | null;
   chat: ChatMsg[];
+  /** brouillon de séance (date → exercice → séries), survit à la navigation et au rechargement */
+  draft: { date: string; logs: Record<string, SetLog[]>; subs: Record<string, string> } | null;
+  setDraft: (d: Store['draft']) => void;
   hydrated: boolean;
   setHydrated: () => void;
   loadDemo: () => void;
@@ -50,6 +54,8 @@ export const useStore = create<Store>()(
     (set, get) => ({
       state: null,
       chat: [],
+      draft: null,
+      setDraft: (d) => set({ draft: d }),
       hydrated: false,
       setHydrated: () => set({ hydrated: true }),
       loadDemo: () => set({ state: buildDemoState(today()), chat: [] }),
@@ -72,7 +78,7 @@ export const useStore = create<Store>()(
     {
       name: 'recomp-v1',
       storage: createJSONStorage(() => localStorage),
-      partialize: (s) => ({ state: s.state, chat: s.chat }),
+      partialize: (s) => ({ state: s.state, chat: s.chat, draft: s.draft }),
       onRehydrateStorage: () => (state) => state?.setHydrated(),
     },
   ),

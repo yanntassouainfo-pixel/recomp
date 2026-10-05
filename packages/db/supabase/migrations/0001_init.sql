@@ -338,14 +338,14 @@ drop policy if exists exercises_read on exercises;
 create policy exercises_read on exercises for select using (true);
 
 -- ---------- Storage : photos privées ----------
-insert into storage.buckets (id, name, public) values ('body-photos', 'body-photos', false) on conflict (id) do nothing;
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types) values ('body-photos', 'body-photos', false, 5242880, '{image/jpeg,image/png,image/webp}') on conflict (id) do update set file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 drop policy if exists "body photos owner" on storage.objects;
 create policy "body photos owner" on storage.objects for all
   using (bucket_id = 'body-photos' and (storage.foldername(name))[1] = auth.uid()::text)
   with check (bucket_id = 'body-photos' and (storage.foldername(name))[1] = auth.uid()::text);
 
 -- ---------- Export / suppression (RGPD) ----------
-create or replace function export_user_data() returns jsonb language plpgsql security definer as $$
+create or replace function export_user_data() returns jsonb language plpgsql security definer set search_path = public, pg_temp as $$
 declare uid uuid := auth.uid(); result jsonb;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
@@ -360,19 +360,39 @@ begin
     'daily_checkins', (select coalesce(jsonb_agg(to_jsonb(x)), '[]') from daily_checkins x where x.user_id = uid),
     'weekly_reviews', (select coalesce(jsonb_agg(to_jsonb(x)), '[]') from weekly_reviews x where x.user_id = uid),
     'ai_messages', (select coalesce(jsonb_agg(to_jsonb(x)), '[]') from ai_messages x where x.user_id = uid),
-    'consents', (select coalesce(jsonb_agg(to_jsonb(x)), '[]') from consents x where x.user_id = uid)
+    'consents', (select coalesce(jsonb_agg(to_jsonb(x)), '[]') from consents x where x.user_id = uid),
+    'meals', (select coalesce(jsonb_agg(to_jsonb(x)), '[]') from meals x where x.user_id = uid),
+    'sleep_logs', (select coalesce(jsonb_agg(to_jsonb(x)), '[]') from sleep_logs x where x.user_id = uid),
+    'recovery_logs', (select coalesce(jsonb_agg(to_jsonb(x)), '[]') from recovery_logs x where x.user_id = uid),
+    'monthly_reports', (select coalesce(jsonb_agg(to_jsonb(x)), '[]') from monthly_reports x where x.user_id = uid),
+    'ai_recommendations', (select coalesce(jsonb_agg(to_jsonb(x)), '[]') from ai_recommendations x where x.user_id = uid),
+    'habits', (select coalesce(jsonb_agg(to_jsonb(x)), '[]') from habits x where x.user_id = uid),
+    'habit_logs', (select coalesce(jsonb_agg(to_jsonb(x)), '[]') from habit_logs x where x.user_id = uid),
+    'life_events', (select coalesce(jsonb_agg(to_jsonb(x)), '[]') from life_events x where x.user_id = uid),
+    'notifications', (select coalesce(jsonb_agg(to_jsonb(x)), '[]') from notifications x where x.user_id = uid),
+    'nutrition_profile', (select to_jsonb(x) from nutrition_profiles x where x.user_id = uid),
+    'workouts', (select coalesce(jsonb_agg(to_jsonb(x)), '[]') from workouts x where x.user_id = uid),
+    'workout_days', (select coalesce(jsonb_agg(to_jsonb(x)), '[]') from workout_days x where x.user_id = uid),
+    'health_samples', (select coalesce(jsonb_agg(to_jsonb(x)), '[]') from health_samples x where x.user_id = uid)
   ) into result;
   return result;
 end $$;
 
-create or replace function delete_user_data() returns void language plpgsql security definer as $$
+create or replace function delete_user_data() returns void language plpgsql security definer set search_path = public, pg_temp as $$
 declare uid uuid := auth.uid();
 begin
   if uid is null then raise exception 'not authenticated'; end if;
+  -- Les objets Storage doivent être supprimés via l'API Storage (Edge Function) AVANT cet appel,
+  -- sinon des fichiers orphelins peuvent subsister sur le backend. Cette ligne nettoie l'index.
   delete from storage.objects where bucket_id = 'body-photos' and (storage.foldername(name))[1] = uid::text;
   delete from profiles where user_id = uid;  -- cascade sur toutes les tables utilisateur
-  delete from auth.users where id = uid;
+  delete from auth.users where id = uid;     -- invalide les sessions
 end $$;
+
+revoke execute on function export_user_data() from public, anon;
+revoke execute on function delete_user_data() from public, anon;
+grant execute on function export_user_data() to authenticated;
+grant execute on function delete_user_data() to authenticated;
 
 -- updated_at
 create or replace function set_updated_at() returns trigger language plpgsql as $$ begin new.updated_at = now(); return new; end $$;

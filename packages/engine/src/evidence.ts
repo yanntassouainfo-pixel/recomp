@@ -6,7 +6,7 @@ import type { Evidence, EvidenceId, EvidenceLevel } from './types';
  * Les sources sont des repères bibliographiques (auteur, année, type) à vérifier
  * et à tenir à jour ; elles ne remplacent pas une revue de littérature.
  */
-export const EVIDENCE: Record<EvidenceId, Evidence> = {
+export const EVIDENCE = {
   protein_intake: {
     id: 'protein_intake',
     level: 'solid',
@@ -241,6 +241,33 @@ export const EVIDENCE: Record<EvidenceId, Evidence> = {
     whatWeDo: 'Stratégie par défaut pour les profils « sec + carrure » : déficit léger, protéines hautes, progression de force.',
     sources: [{ ref: 'Barakat et al., Strength Cond J', year: 2020, type: 'narrative' }],
   },
+} as Record<EvidenceId, Evidence>;
+
+EVIDENCE.periodization = {
+  id: 'periodization',
+  level: 'probable',
+  title: 'Périodisation par phases',
+  summary:
+    "Organiser l'entraînement en blocs (fondation, construction, intensification, allègement) donne des gains de force légèrement supérieurs à un programme constant chez des personnes entraînées ; pour l'hypertrophie, l'effet est faible mais la structure aide à gérer la fatigue et l'adhérence.",
+  whatWeDo: 'Plan en 12 semaines par objectif : phases avec volume, réserve (RIR) et nutrition propres, semaine allégée planifiée.',
+  sources: [{ ref: 'Williams et al., Sports Med (méta-analyse périodisation vs non périodisé)', year: 2017, type: 'meta-analysis' }],
+};
+EVIDENCE.diet_break = {
+  id: 'diet_break',
+  level: 'probable',
+  title: 'Pause diète (retour temporaire à maintenance)',
+  summary:
+    "Alterner des blocs de déficit avec des semaines à maintenance a donné, dans l'essai MATADOR, une perte de masse grasse supérieure et une meilleure conservation de la dépense énergétique qu'un déficit continu. Les réplications sont mitigées ; l'intérêt principal est l'adhérence et la récupération.",
+  whatWeDo: 'En phase perte de gras : une semaine à maintenance toutes les 5–6 semaines, planifiée à l’avance.',
+  sources: [{ ref: 'Byrne et al., Int J Obes (MATADOR)', year: 2018, type: 'rct' }, { ref: 'Peos et al., Med Sci Sports Exerc (ICECAP)', year: 2021, type: 'rct' }],
+};
+EVIDENCE.training_frequency = {
+  id: 'training_frequency',
+  level: 'probable',
+  title: 'Fréquence : chaque muscle 2 fois par semaine',
+  summary: "À volume égal, entraîner un muscle 2 fois par semaine tend à produire un peu plus d'hypertrophie qu'une seule fois ; au-delà, pas de différence nette.",
+  whatWeDo: 'Répartition des séances dans la semaine pour que chaque groupe soit sollicité ≥ 2 fois.',
+  sources: [{ ref: 'Schoenfeld et al., Sports Med', year: 2016, type: 'meta-analysis' }],
 };
 
 export const EVIDENCE_LABEL: Record<EvidenceLevel, string> = {

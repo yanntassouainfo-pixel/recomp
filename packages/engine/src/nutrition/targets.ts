@@ -11,6 +11,8 @@ export interface NutritionModifiers {
   lifeEvent?: LifeEventType | null;
   /** réduction/augmentation supplémentaire décidée par la revue hebdo (ex. -0.05) */
   reviewAdjustment?: number;
+  /** nom de la phase imposant la maintenance (deload, pause diète, consolidation) */
+  maintenance?: string;
 }
 
 export interface SimplePortions {
@@ -116,6 +118,11 @@ export function computeNutritionTargets(state: UserState, today: ISODate, dayTyp
   if (mods.reviewAdjustment && !safeMode) {
     delta += mods.reviewAdjustment;
     notes.push(`Ajustement décidé lors de ta revue hebdomadaire : ${mods.reviewAdjustment > 0 ? '+' : ''}${Math.round(mods.reviewAdjustment * 100)} %.`);
+  }
+  if (mods.maintenance && !safeMode) {
+    delta = Math.max(delta, 0);
+    strategy = `${mods.maintenance} — maintenance planifiée`;
+    notes.push(`${mods.maintenance} : apports à maintenance toute la semaine, c’est prévu par ton plan. Le déficit reprend la semaine suivante.`);
   }
   if (mods.lifeEvent === 'illness') {
     delta = Math.max(delta, 0);

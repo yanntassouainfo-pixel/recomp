@@ -15,6 +15,8 @@ export * from './adaptation/review';
 export * from './adaptation/lifeMode';
 export * from './adaptation/alerts';
 export * from './adaptation/habits';
+export * from './plan/periodization';
+export * from './plan/calendar';
 export * from './compute';
 export * from './report';
 export * from './coach/rules';

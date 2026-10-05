@@ -26,8 +26,15 @@ export default function Coach() {
     setQ('');
     pushChat({ role: 'user', content: question });
     setBusy(true);
+    if (process.env.NEXT_PUBLIC_STATIC === '1') {
+      const r = rulesCoach(question, state, c);
+      pushChat({ role: 'assistant', content: r.text, meta: { source: 'coach déterministe (démo)', evidenceIds: r.evidenceIds } });
+      setSource('Version de démonstration : le coach déterministe répond localement. La conversation libre par IA est disponible sur la version serveur.');
+      setBusy(false);
+      return;
+    }
     try {
-      const res = await fetch('/api/coach', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ question, state, today: today(), history: chat.slice(-8).map((m) => ({ role: m.role, content: m.content })) }) });
+      const res = await fetch((process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/api/coach', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ question, state: { ...state, photos: state.photos.map((p) => ({ ...p, uri: '' })) }, today: today(), history: chat.slice(-8).map((m) => ({ role: m.role, content: m.content })) }) });
       if (!res.ok) throw new Error('api');
       const a = (await res.json()) as { text: string; source: string; evidenceIds: string[]; providerId?: string };
       pushChat({ role: 'assistant', content: a.text, meta: { source: a.source === 'llm' ? `IA (${a.providerId})` : 'moteur', evidenceIds: a.evidenceIds } });

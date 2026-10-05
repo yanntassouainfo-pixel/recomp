@@ -29,10 +29,23 @@ export default function Body() {
   const last = (k: keyof Measurement) => [...state.measurements].reverse().find((x) => typeof x[k] === 'number')?.[k] as number | undefined;
   const firstV = (k: keyof Measurement) => state.measurements.find((x) => typeof x[k] === 'number')?.[k] as number | undefined;
 
-  const onFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = () => addPhoto({ id: 'ph_' + Math.random().toString(36).slice(2, 8), date: today(), view, uri: String(reader.result) });
-    reader.readAsDataURL(file);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const onFile = async (file: File) => {
+    setPhotoError(null);
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/heic'].includes(file.type)) return setPhotoError('Format non pris en charge : JPEG, PNG ou WebP.');
+    if (file.size > 15 * 1024 * 1024) return setPhotoError('Photo trop lourde (max 15 Mo).');
+    try {
+      const uri = await compressImage(file, 1280, 0.82);
+      try {
+        addPhoto({ id: 'ph_' + Math.random().toString(36).slice(2, 8), date: today(), view, uri });
+        // vérification du quota : zustand persist échoue silencieusement sinon
+        localStorage.setItem('recomp-quota-probe', '1'); localStorage.removeItem('recomp-quota-probe');
+      } catch {
+        setPhotoError('Espace de stockage du navigateur plein : exporte tes données puis supprime d’anciennes photos.');
+      }
+    } catch {
+      setPhotoError('Impossible de lire cette image.');
+    }
   };
 
   const otherMeasures: [keyof Measurement, string][] = [['chestCm', 'Poitrine'], ['shouldersCm', 'Épaules'], ['hipsCm', 'Hanches'], ['armCm', 'Bras'], ['thighCm', 'Cuisse'], ['calfCm', 'Mollet'], ['neckCm', 'Cou']];
@@ -108,13 +121,14 @@ export default function Body() {
               <div className="card-2 p-3 text-sm"><div className="font-semibold mb-1">Protocole</div><ul className="text-ink-2 space-y-0.5 list-disc pl-4"><li>Même lumière, même endroit</li><li>Même distance (repère au sol)</li><li>Même posture, bras le long du corps</li><li>Matin, avant de manger si possible</li><li>Toutes les 4 semaines</li></ul></div>
               <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ''; }} />
               <button className="btn btn-primary w-full" onClick={() => fileRef.current?.click()}><Camera size={16} /> Ajouter une photo ({view === 'front' ? 'face' : view === 'side' ? 'profil' : 'dos'})</button>
+              {photoError && <p className="text-sm text-[var(--danger)]">{photoError}</p>}
               {lastPhoto && (
                 <div className="text-sm">
                   <div className="label mb-1.5">Par rapport à la précédente, tu te vois…</div>
                   <Segmented value={lastPhoto.selfAssessment ?? 'same'} onChange={(v) => setPhotoAssessment(lastPhoto.id, v as BodyPhotoMeta['selfAssessment'])} options={[{ value: 'worse', label: 'Moins bien' }, { value: 'same', label: 'Pareil' }, { value: 'better', label: 'Mieux' }]} />
                 </div>
               )}
-              <div className="text-xs text-ink-3 flex flex-col gap-1.5"><EvidenceBadge id="photo_bodyfat" /><span>Jamais de % de masse grasse déduit d’une photo. Les photos restent sur ton appareil en mode démo ; avec un compte, elles sont stockées chiffrées dans un espace privé.</span></div>
+              <div className="text-xs text-ink-3 flex flex-col gap-1.5"><EvidenceBadge id="photo_bodyfat" /><span>Jamais de % de masse grasse déduit d’une photo. Les photos sont réduites (1280 px) et stockées uniquement dans ce navigateur, non chiffrées : ne les ajoute que sur un appareil personnel. Elles ne sont jamais envoyées au coach.</span></div>
             </div>
           </div>
         </Card>
@@ -132,4 +146,18 @@ export default function Body() {
       </Sheet>
     </div>
   );
+}
+
+/** Redimensionne et compresse l'image côté client (≤ maxPx, JPEG). */
+async function compressImage(file: File, maxPx: number, quality: number): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, maxPx / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('canvas');
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  return canvas.toDataURL('image/jpeg', quality);
 }

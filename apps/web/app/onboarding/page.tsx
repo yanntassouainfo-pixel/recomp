@@ -47,11 +47,20 @@ export default function Onboarding() {
   const [mode, setMode] = useState<AppMode>('simple');
   const [precision, setPrecision] = useState<NutritionPrecision>('simple');
   const [risk, setRisk] = useState({ pregnant: false, minor: false, medicalHistory: false, eatingDisorderHistory: false });
-  const [consent, setConsent] = useState({ terms: false, photoAiAnalysis: false, productImprovement: false });
+  const [consent, setConsent] = useState({ terms: false, healthData: false, photoAiAnalysis: false, productImprovement: false });
   const [name, setName] = useState('');
 
   const toggle = <T,>(arr: T[], v: T, set: (x: T[]) => void) => set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
   const minor = age < 18;
+  const errors: string[] = [];
+  if (step === 1) {
+    if (!(age >= 14 && age <= 90)) errors.push('Âge entre 14 et 90 ans.');
+    if (!(height >= 120 && height <= 230)) errors.push('Taille entre 120 et 230 cm.');
+    if (!(weight >= 35 && weight <= 250)) errors.push('Poids entre 35 et 250 kg.');
+    if (!(sessions >= 2 && sessions <= 6)) errors.push('Entre 2 et 6 séances par semaine.');
+    if (!(minutes >= 20 && minutes <= 120)) errors.push('Entre 20 et 120 minutes par séance.');
+  }
+  if (step === 2 && !(workHours >= 0 && workHours <= 100)) errors.push('Heures de travail entre 0 et 100.');
 
   const reformulation = useMemo(() => {
     const wantsKeepFrame = visual.includes('bigger') || visual.includes('wider_shoulders') || visual.includes('athletic') || visual.includes('defined');
@@ -67,7 +76,7 @@ export default function Onboarding() {
       sessionsPerWeek: sessions, sessionMinutes: minutes, equipment, occupation, workHoursPerWeek: workHours, stepsPerDay: stepsPerDay === '' ? undefined : Number(stepsPerDay),
       goals: goals.length ? goals : [primary], primaryGoal: primary, visualGoals: visual, fatStorage: visual.includes('flat_stomach') ? ['abdomen'] : [], priorityStatement: priority || undefined,
       mode: workHours >= 50 && mode === 'simple' ? 'busy' : mode, nutritionPrecision: precision, foodCultures: cultures, dietaryPreferences: prefs, allergies, dislikedFoods: [], limitations: [],
-      risk: { ...risk, minor }, consents: { photoAiAnalysis: consent.photoAiAnalysis, productImprovement: consent.productImprovement, notifications: true }, traits: {}, fastingWindow: null,
+      risk: { ...risk, minor }, consents: { photoAiAnalysis: consent.photoAiAnalysis, productImprovement: consent.productImprovement, notifications: true, healthData: consent.healthData, consentedAt: new Date().toISOString() }, traits: {}, fastingWindow: null,
       mealsPerDay: 3, trainingTimeOfDay: 'evening', trainingDays: [],
     };
     create(profile);
@@ -122,7 +131,7 @@ export default function Onboarding() {
     // 4 — Sécurité & consentements
     <div key="4" className="space-y-5">
       <h1 className="text-3xl font-extrabold tracking-tight">Quelques points de sécurité</h1>
-      <p className="text-ink-2">Ils changent la manière dont on t’accompagne. Aucune réponse n’est bloquante.</p>
+      <p className="text-ink-2">Ils changent la manière dont on t’accompagne. Aucune réponse aux questions de sécurité n’est bloquante ; seules les deux premières cases de consentement sont nécessaires.</p>
       {[
         ['pregnant', 'Je suis enceinte ou en post-partum récent'],
         ['medicalHistory', 'J’ai un antécédent médical important (cardiaque, métabolique, articulaire…)'],
@@ -136,8 +145,9 @@ export default function Onboarding() {
       {minor && <div className="card-2 p-4 text-sm border-l-4 border-l-[var(--accent-recovery)]">Tu as moins de 18 ans : l’application restera en mode accompagnement général (pas de déficit, pas de cibles agressives) et recommande un suivi par un adulte référent ou un professionnel.</div>}
       <label className="block"><span className="label">Prénom (facultatif)</span><input className="input mt-1" value={name} onChange={(e) => setName(e.target.value)} /></label>
       <div className="space-y-2">
-        <label className="flex items-start gap-3 text-sm"><input type="checkbox" className="mt-1" checked={consent.terms} onChange={(e) => setConsent({ ...consent, terms: e.target.checked })} /> J’ai compris que RECOMP n’est pas un dispositif médical et que mes données restent privées (export et suppression à tout moment).</label>
-        <label className="flex items-start gap-3 text-sm text-ink-2"><input type="checkbox" className="mt-1" checked={consent.photoAiAnalysis} onChange={(e) => setConsent({ ...consent, photoAiAnalysis: e.target.checked })} /> J’autorise l’analyse IA de mes photos (observations qualitatives uniquement, jamais de % de masse grasse). Facultatif.</label>
+        <label className="flex items-start gap-3 text-sm"><input type="checkbox" className="mt-1" checked={consent.terms} onChange={(e) => setConsent({ ...consent, terms: e.target.checked })} /> J’ai compris que RECOMP n’est pas un dispositif médical et j’ai lu la <a href="/confidentialite" target="_blank" className="underline">politique de confidentialité</a> et les <a href="/mentions-legales" target="_blank" className="underline">mentions légales</a>.</label>
+        <label className="flex items-start gap-3 text-sm"><input type="checkbox" className="mt-1" checked={consent.healthData} onChange={(e) => setConsent({ ...consent, healthData: e.target.checked })} /> J’accepte que RECOMP traite mes mesures corporelles, check-ins (énergie, sommeil, stress, douleurs) et informations de santé déclarées pour personnaliser mon coaching. Ces données restent dans ce navigateur ; export et suppression à tout moment.</label>
+        <label className="flex items-start gap-3 text-sm text-ink-2"><input type="checkbox" className="mt-1" checked={consent.photoAiAnalysis} onChange={(e) => setConsent({ ...consent, photoAiAnalysis: e.target.checked })} /> J’autorise l’analyse IA de mes photos quand la fonction sera disponible (observations qualitatives uniquement, jamais de % de masse grasse). Facultatif, rien n’est analysé aujourd’hui.</label>
         <label className="flex items-start gap-3 text-sm text-ink-2"><input type="checkbox" className="mt-1" checked={consent.productImprovement} onChange={(e) => setConsent({ ...consent, productImprovement: e.target.checked })} /> J’accepte que des données anonymisées servent à améliorer le produit. Facultatif, jamais pour les photos.</label>
       </div>
     </div>,
@@ -154,7 +164,7 @@ export default function Onboarding() {
     </div>,
   ];
 
-  const canNext = step === 4 ? consent.terms : true;
+  const canNext = step === 4 ? consent.terms && consent.healthData : errors.length === 0;
   return (
     <div className="min-h-dvh flex flex-col">
       <header className="max-w-2xl w-full mx-auto px-5 h-16 flex items-center justify-between">
@@ -168,7 +178,10 @@ export default function Onboarding() {
       <footer className="max-w-2xl w-full mx-auto px-5 py-5 flex items-center justify-between gap-3 sticky bottom-0 glass md:bg-transparent md:border-0">
         <button className="btn btn-ghost" disabled={step === 0} onClick={() => setStep(step - 1)}><ArrowLeft size={16} /> Retour</button>
         {step < steps.length - 1 ? (
-          <button className="btn btn-primary" disabled={!canNext} onClick={() => setStep(step + 1)}>Continuer <ArrowRight size={16} /></button>
+          <div className="flex flex-col items-end gap-1">
+            <button className="btn btn-primary" disabled={!canNext} onClick={() => setStep(step + 1)}>Continuer <ArrowRight size={16} /></button>
+            {!canNext && <span className="text-[11px] text-ink-3 text-right">{step === 4 ? 'Coche les deux premières cases pour continuer.' : errors.join(' ')}</span>}
+          </div>
         ) : (
           <button className="btn btn-primary" onClick={finish}>Voir mon plan du jour <ArrowRight size={16} /></button>
         )}

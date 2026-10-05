@@ -1,4 +1,5 @@
 'use client';
+import { useEffect, useRef } from 'react';
 import { cx } from '@/lib/format';
 import { ArrowDownRight, ArrowRight, ArrowUpRight, X } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -46,13 +47,24 @@ export function Chip({ on, onClick, children }: { on: boolean; onClick: () => vo
   return <button type="button" className="chip" data-on={on} onClick={onClick}>{children}</button>;
 }
 
+/** Modale accessible : rôle dialog, Échap, focus initial, verrouillage du défilement. */
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title?: string; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.activeElement as HTMLElement | null;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    ref.current?.querySelector<HTMLElement>('button, input, select, textarea, a')?.focus();
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = ''; prev?.focus?.(); };
+  }, [open, onClose]);
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/30 md:p-6" onClick={onClose}>
-      <div className="card w-full md:max-w-xl max-h-[90vh] overflow-auto p-6 rounded-b-none md:rounded-b-[var(--radius-card)] rise" onClick={(e) => e.stopPropagation()}>
+      <div ref={ref} role="dialog" aria-modal="true" aria-label={title} className="card w-full md:max-w-xl max-h-[90vh] overflow-auto p-6 rounded-b-none md:rounded-b-[var(--radius-card)] rise" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-4 mb-4">
-          {title && <h3 className="font-bold text-lg">{title}</h3>}
+          {title && <h2 className="font-bold text-lg">{title}</h2>}
           <button className="btn btn-ghost btn-sm -mr-2" onClick={onClose} aria-label="Fermer"><X size={18} /></button>
         </div>
         {children}

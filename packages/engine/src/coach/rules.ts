@@ -4,6 +4,7 @@ import { EVIDENCE } from '../evidence';
 import { recomposeForEvent } from '../adaptation/lifeMode';
 import { adaptHabitualDish, TRADITIONAL_DISHES } from '../nutrition/plan';
 import { FOODS } from '../nutrition/foods';
+import { addDays as addDaysStr } from '../stats';
 
 export interface CoachReply {
   text: string;
@@ -174,10 +175,4 @@ function reply(intent: string, evidenceIds: EvidenceId[], text: string): CoachRe
 
 function levelLabel(l: string): string {
   return ({ solid: 'solide', probable: 'probable', uncertain: 'incertain', approach: 'approche' } as Record<string, string>)[l] ?? l;
-}
-
-function addDaysStr(iso: string, n: number): string {
-  const d = new Date(iso + 'T00:00:00');
-  d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
 }

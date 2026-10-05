@@ -40,7 +40,7 @@ export default function Review() {
       <header className="flex flex-wrap items-end justify-between gap-4 rise">
         <div>
           <div className="label">Bilans</div>
-          <h1 className="text-3xl font-extrabold tracking-tight mt-1">{tab === 'week' ? 'Ton bilan de la semaine' : 'Your Body Report'}</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight mt-1">{tab === 'week' ? 'Ton bilan de la semaine' : 'Ton rapport corporel du mois'}</h1>
           <p className="text-ink-2 mt-1 max-w-2xl">{tab === 'week' ? r.headline : report.conclusion}</p>
         </div>
         <Segmented value={tab} onChange={setTab} options={[{ value: 'week', label: 'Semaine' }, { value: 'month', label: 'Mois' }]} />

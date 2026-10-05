@@ -129,6 +129,11 @@ export function buildDayPlan(targets: NutritionTargets, profile: Profile, seed =
       }
       const pNeeded = Math.max(10, mealP - others().p);
       items.push(item(pSrc, roundGrams(pNeeded / (pSrc.per100.p / 100), pSrc.id === 'eggs' ? 55 : 50), 'protein', [pSrc.id === 'eggs' ? dairy[0] : FOOD_BY_ID.eggs, FOOD_BY_ID.whey].filter((f): f is Food => Boolean(f) && f!.id !== pSrc.id), pNeeded));
+      const bShort = mealP - others().p;
+      if (bShort > 10) {
+        const second = pSrc.id === 'eggs' ? dairy[0] ?? FOOD_BY_ID.whey! : !exclude(FOOD_BY_ID.eggs!) ? FOOD_BY_ID.eggs! : FOOD_BY_ID.whey!;
+        if (second && !exclude(second)) items.push(item(second, roundGrams(bShort / (second.per100.p / 100), second.id === 'eggs' ? 55 : second.id === 'whey' ? 5 : 50), 'protein', [], bShort));
+      }
     } else if (slot.kind === 'snack') {
       const fr = pick(fruits, seed + i + 1);
       items.push(item(fr, fr.serving, 'fruit', fruits.filter((f) => f.id !== fr.id).slice(0, 2)));
@@ -189,6 +194,11 @@ export function buildDayPlan(targets: NutritionTargets, profile: Profile, seed =
       }
       const pNeeded = Math.max(15, mealP - others().p);
       items.push(item(pSrc, roundGrams(pNeeded / (pSrc.per100.p / 100), 10), 'protein', proteins.filter((f) => f.id !== pSrc.id && f.id !== 'eggs').slice(0, 3), pNeeded));
+      const shortfall = mealP - others().p;
+      if (shortfall > 12) {
+        const second = pool.find((f) => f.id !== pSrc.id && f.per100.f <= 8) ?? FOOD_BY_ID.eggs!;
+        if (second && !exclude(second)) items.push(item(second, roundGrams(shortfall / (second.per100.p / 100), 10), 'protein', [], shortfall));
+      }
       // ordre d'affichage : protéines, légumes, glucides, lipides
       items.sort((a, b) => order(a.role) - order(b.role));
     }
@@ -213,7 +223,20 @@ function order(role: MealItem['role']): number {
   return { protein: 0, veg: 1, carb: 2, fat: 3, fruit: 4, dish: 5 }[role];
 }
 
+/** Bornes de plausibilité (g tel que consommé) : ce qui tient dans une assiette. */
+const BOUNDS: Record<MealItem['role'], [number, number]> = { protein: 60, carb: 60, veg: 100, fat: 5, fruit: 80, dish: 150 } as unknown as Record<MealItem['role'], [number, number]>;
+const MAX_G: Record<string, number> = { eggs: 220, whey: 40, greek_yogurt: 300, cottage: 300, tofu: 250, oats: 100, bread_whole: 150, peanuts: 50, nuts_mix: 50, seeds: 40, avocado: 150, olive_oil: 30, palm_oil: 25 };
+const ROLE_MAX: Record<MealItem['role'], number> = { protein: 250, carb: 350, veg: 400, fat: 60, fruit: 300, dish: 500 };
+const ROLE_MIN: Record<MealItem['role'], number> = { protein: 60, carb: 60, veg: 100, fat: 5, fruit: 80, dish: 150 };
+void BOUNDS;
+
+function clampGrams(food: Food, grams: number, role: MealItem['role']): number {
+  const max = Math.min(ROLE_MAX[role], MAX_G[food.id] ?? Infinity);
+  return Math.max(ROLE_MIN[role], Math.min(max, grams));
+}
+
 function item(food: Food, grams: number, role: MealItem['role'], alts: Food[], targetProtein?: number, targetCarbs?: number): MealItem {
+  grams = clampGrams(food, grams, role);
   return {
     foodId: food.id,
     name: food.name,
@@ -223,7 +246,7 @@ function item(food: Food, grams: number, role: MealItem['role'], alts: Food[], t
     alternatives: alts.slice(0, 3).map((a) => ({
       foodId: a.id,
       name: a.name,
-      grams: targetProtein ? roundGrams(targetProtein / (a.per100.p / 100), 10) : targetCarbs ? roundGrams(targetCarbs / (a.per100.c / 100), 10) : a.serving,
+      grams: clampGrams(a, targetProtein ? roundGrams(targetProtein / (a.per100.p / 100), 10) : targetCarbs ? roundGrams(targetCarbs / (a.per100.c / 100), 10) : a.serving, role),
     })),
   };
 }

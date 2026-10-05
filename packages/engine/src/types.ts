@@ -65,6 +65,10 @@ export interface Consents {
   photoAiAnalysis: boolean;
   productImprovement: boolean;
   notifications: boolean;
+  /** traitement des données de santé (art. 9 RGPD), consentement explicite */
+  healthData?: boolean;
+  /** horodatage ISO des consentements */
+  consentedAt?: string;
 }
 
 export interface BehaviouralTraits {
@@ -288,7 +292,10 @@ export type EvidenceId =
   | 'low_carb'
   | 'photo_bodyfat'
   | 'readiness_autoregulation'
-  | 'recomposition_feasibility';
+  | 'recomposition_feasibility'
+  | 'periodization'
+  | 'diet_break'
+  | 'training_frequency';
 
 export interface EvidenceSource {
   ref: string;

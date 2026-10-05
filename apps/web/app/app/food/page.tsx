@@ -88,8 +88,8 @@ export default function Food() {
         <Card accent="nutrition" kicker="Vraie vie" title="Tu peux manger ton plat habituel">
           <p className="text-sm text-ink-2">Choisis ton plat : voici comment ajuster portion et accompagnement, sans le supprimer.</p>
           <div className="grid grid-cols-2 gap-2">
-            <select className="input" value={dish} onChange={(e) => setDish(e.target.value)}>{TRADITIONAL_DISHES.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select>
-            <select className="input" value={carb} onChange={(e) => setCarb(e.target.value)}>{carbs.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select>
+            <select className="input" aria-label="Plat habituel" value={dish} onChange={(e) => setDish(e.target.value)}>{TRADITIONAL_DISHES.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select>
+            <select className="input" aria-label="Accompagnement" value={carb} onChange={(e) => setCarb(e.target.value)}>{carbs.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select>
           </div>
           {habitual && <ul className="text-sm space-y-1.5 list-disc pl-4">{habitual.lines.map((l) => <li key={l}>{l}</li>)}</ul>}
           {habitual && !simple && <div className="text-xs text-ink-3 tnum">≈ {habitual.macros.kcal} kcal · P {Math.round(habitual.macros.p)} g</div>}

@@ -13,6 +13,8 @@ import { activeLifeEvent, recomposeForEvent, type LifePlan } from './adaptation/
 import { computeAlerts, type Alert } from './adaptation/alerts';
 import { selectWeeklyHabits, type Habit } from './adaptation/habits';
 import type { BodyCompositionScore, RecoveryScore, VitalityScore } from './types';
+import { buildProgramPlan, phaseFor, weekFor, type PlanPhase, type ProgramPlan, type WeekPlan } from './plan/periodization';
+import { summarizeWeek, type WeekSummary } from './plan/calendar';
 
 export interface DailyBrief {
   date: ISODate;
@@ -31,6 +33,10 @@ export interface ComputedState {
   vitality: VitalityScore;
   recovery: RecoveryScore;
   program: Program;
+  plan: ProgramPlan;
+  currentWeek: WeekPlan | null;
+  currentPhase: PlanPhase | null;
+  weekSummary: WeekSummary | null;
   todayWorkout: WorkoutDay | null;
   session: AdjustedSession | null;
   targetsByExercise: Record<string, NextTarget>;
@@ -52,9 +58,15 @@ export interface ComputedState {
   };
 }
 
-export function isTrainingDay(state: UserState, program: Program, today: ISODate): WorkoutDay | null {
+export function isTrainingDay(state: UserState, program: Program, today: ISODate, plan?: ProgramPlan): WorkoutDay | null {
   const planned = state.sessions.find((s) => s.date === today);
   if (planned) return program.days.find((d) => d.id === planned.workoutDayId) ?? program.days[0] ?? null;
+  if (plan) {
+    const w = weekFor(plan, today);
+    const s = w?.sessions.find((x) => x.date === today);
+    if (w && !s) return null;
+    if (s) return program.days.find((d) => d.id === s.workoutDayId) ?? null;
+  }
   const dow = dayOfWeek(today);
   return program.days.find((d) => d.weekday === dow) ?? null;
 }
@@ -62,7 +74,11 @@ export function isTrainingDay(state: UserState, program: Program, today: ISODate
 export function computeState(state: UserState, today: ISODate): ComputedState {
   const checkin = state.checkins.find((c) => c.date === today) ?? null;
   const program = generateProgram(state.profile);
-  const todayWorkout = isTrainingDay(state, program, today);
+  const plan = buildProgramPlan(state.profile, program);
+  const currentWeek = weekFor(plan, today);
+  const currentPhase = phaseFor(plan, today);
+  const weekSummary = summarizeWeek(state, plan, today);
+  const todayWorkout = isTrainingDay(state, program, today, plan);
   const lifeEvent = activeLifeEvent(state, today);
   const lifePlan = lifeEvent ? recomposeForEvent(state, lifeEvent) : null;
 
@@ -81,19 +97,23 @@ export function computeState(state: UserState, today: ISODate): ComputedState {
     poorSleep: checkin ? checkin.sleepHours < 6 : false,
     lifeEvent: lifeEvent?.type ?? null,
     reviewAdjustment: review.energyAdjustment || undefined,
+    maintenance: currentPhase?.nutritionMode === 'maintenance' ? currentPhase.name : undefined,
   });
   const dayPlan = buildDayPlan(nutrition, state.profile, Number(today.replaceAll('-', '')) % 7);
   const fasting = assessFasting(state, today, nutrition.proteinG);
 
-  const session = todayWorkout ? adjustSession(todayWorkout, recovery.readiness, checkin) : null;
+  const phasedWorkout: WorkoutDay | null = todayWorkout && currentPhase
+    ? { ...todayWorkout, exercises: todayWorkout.exercises.map((e) => ({ ...e, sets: Math.max(2, Math.round(e.sets * currentPhase.volumeMultiplier)), rirTarget: currentPhase.rirTarget, note: currentPhase.intent === 'deload' ? 'Semaine allégée' : e.note })) }
+    : todayWorkout;
+  const session = phasedWorkout ? adjustSession(phasedWorkout, recovery.readiness, checkin) : null;
   const targetsByExercise: Record<string, NextTarget> = {};
-  if (todayWorkout) {
-    for (const ex of todayWorkout.exercises) targetsByExercise[ex.exerciseId] = nextTarget(ex, state.performance, deloadA.recommended);
+  if (phasedWorkout) {
+    for (const ex of phasedWorkout.exercises) targetsByExercise[ex.exerciseId] = nextTarget(ex, state.performance, deloadA.recommended || currentPhase?.intent === 'deload');
   }
   const alerts = computeAlerts(state, today);
   const habits = selectWeeklyHabits(state, today);
 
-  const brief = buildBrief({ state, today, dayType, session, nutrition, recovery, vitality, habits, lifePlan, checkin });
+  const brief = buildBrief({ state, today, dayType, session, nutrition, recovery, vitality, habits, lifePlan, checkin, phase: currentPhase, week: currentWeek, weeksTotal: plan.weeksTotal });
 
   return {
     today,
@@ -102,7 +122,11 @@ export function computeState(state: UserState, today: ISODate): ComputedState {
     vitality,
     recovery,
     program,
-    todayWorkout,
+    plan,
+    currentWeek,
+    currentPhase,
+    weekSummary,
+    todayWorkout: phasedWorkout,
     session,
     targetsByExercise,
     deload: { recommended: deloadA.recommended, reasons: deloadA.reasons },
@@ -135,12 +159,16 @@ function buildBrief(a: {
   habits: Habit[];
   lifePlan: LifePlan | null;
   checkin: DailyCheckin | null;
+  phase: PlanPhase | null;
+  week: WeekPlan | null;
+  weeksTotal: number;
 }): DailyBrief {
   const { state, today, dayType, session, nutrition, recovery, vitality, habits, lifePlan } = a;
   const p = state.profile;
   const lines: DailyBrief['lines'] = [];
   const simple = p.nutritionPrecision === 'simple';
 
+  if (a.phase && a.week) lines.push({ label: 'Programme', value: `Semaine ${a.week.weekNumber}/${a.weeksTotal} · ${a.phase.name}` });
   if (lifePlan) lines.push({ label: 'Mode vie', value: lifePlan.title });
   if (session && !session.replacedByRecovery) lines.push({ label: 'Musculation', value: `${session.title} — ${session.estimatedMinutes} min` });
   else if (session?.replacedByRecovery) lines.push({ label: 'Récupération', value: session.title });

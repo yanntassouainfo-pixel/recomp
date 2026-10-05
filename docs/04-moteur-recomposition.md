@@ -71,3 +71,10 @@ Chaque sortie importante porte `why: Explanation { context, logic, evidence: Evi
 
 ## 8. Personal Response Profile
 Apprentissage progressif : réponse au volume (perf vs séries/semaine), tolérance au jeûne, satiété (faim vs fibres/protéines), sommeil vs entraînement tardif, récupération. Stocké comme coefficients bornés, mis à jour par la revue hebdo.
+
+## 9. Programme périodisé & calendrier (`plan/`)
+- `phasesFor(profile)` : bloc de 12 semaines par objectif. Recomposition : Fondation (2–3) → Construction (4) → Semaine allégée (1) → Intensification (3–4) → Consolidation (1). Perte de gras : Déficit I (5) → **Pause diète** (1, maintenance) → Déficit II → Consolidation. Prise de muscle : Volume → Allégée → Intensité. Force : Accumulation → Allégée → Intensification → Semaine test. Objectifs énergie/sommeil/santé : Routine → Progression douce → Allégée → Consolidation.
+- Chaque phase porte : multiplicateur de volume, RIR cible, mode nutrition (plan ou maintenance), focus, description, pourquoi, niveau de preuve (`periodization`, `diet_break`, `training_frequency`).
+- `buildProgramPlan()` pose les séances sur les jours d'entraînement, les mesures et le bilan le dimanche, les photos toutes les 4 semaines et en consolidation ; produit des jalons.
+- `buildCalendar()` croise le plan avec l'historique : séances faites / manquées / prévues, mesures et photos faites ou non, événements de vie.
+- `computeState()` applique la phase du jour : volume et RIR de la séance, nutrition à maintenance en deload / pause diète / consolidation.

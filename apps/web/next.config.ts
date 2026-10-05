@@ -10,6 +10,7 @@ const isStatic = process.env.STATIC_EXPORT === '1';
 const basePath = process.env.BASE_PATH ?? (isStatic ? '/recomp' : '');
 
 const nextConfig: NextConfig = {
+  env: { NEXT_PUBLIC_STATIC: isStatic ? '1' : '', NEXT_PUBLIC_BASE_PATH: basePath },
   transpilePackages: ['@recomp/engine', '@recomp/ai'],
   reactStrictMode: true,
   outputFileTracingRoot: path.join(__dirname, '../../'),

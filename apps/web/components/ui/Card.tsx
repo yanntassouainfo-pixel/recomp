@@ -19,7 +19,7 @@ export function Card({ title, kicker, accent = 'none', right, children, classNam
             {accent !== 'none' && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: ACCENT[accent] }} />}
             <div className="min-w-0">
               {kicker && <div className="label">{kicker}</div>}
-              {title && <h3 className="font-semibold text-[15px] leading-tight truncate">{title}</h3>}
+              {title && <h3 className="font-semibold text-[15px] leading-tight">{title}</h3>}
             </div>
           </div>
           {right && <div className="shrink-0">{right}</div>}

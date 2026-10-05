@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Check, Replace } from 'lucide-react';
-import { substitutesFor, type PerformanceLog, type SetLog, type WorkoutDay } from '@recomp/engine';
+import { EXERCISE_BY_ID, substitutesFor, type PerformanceLog, type SetLog, type WorkoutDay } from '@recomp/engine';
 import { Card } from '@/components/ui/Card';
 import { Segmented, Sheet } from '@/components/ui/Primitives';
 import { EvidenceBadge, WhyButton } from '@/components/ui/Evidence';
@@ -13,9 +13,13 @@ export default function Train() {
   const addPerformance = useStore((s) => s.addPerformance);
   const upsertSession = useStore((s) => s.upsertSession);
   const [tab, setTab] = useState<'today' | 'program' | 'history'>('today');
-  const [logs, setLogs] = useState<Record<string, SetLog[]>>({});
+  const draft = useStore((s) => s.draft);
+  const setDraft = useStore((s) => s.setDraft);
+  const logs = draft && draft.date === today() ? draft.logs : {};
+  const subs = draft && draft.date === today() ? draft.subs : {};
+  const setLogs = (l: Record<string, SetLog[]>) => setDraft({ date: today(), logs: l, subs });
+  const setSubs = (sb: Record<string, string>) => setDraft({ date: today(), logs, subs: sb });
   const [subOpen, setSubOpen] = useState<string | null>(null);
-  const [subs, setSubs] = useState<Record<string, string>>({});
   if (!state || !c) return null;
   const p = state.profile;
   const day = c.todayWorkout;
@@ -26,10 +30,10 @@ export default function Train() {
     if (!day) return;
     for (const [exId, sets] of Object.entries(logs)) {
       const valid = sets.filter((s) => s.reps > 0);
-      if (valid.length) addPerformance({ date: today(), exerciseId: exId, sets: valid } satisfies PerformanceLog);
+      if (valid.length) addPerformance({ date: today(), exerciseId: subs[exId] ?? exId, sets: valid } satisfies PerformanceLog);
     }
     upsertSession({ id: 'sess_' + today(), date: today(), workoutDayId: day.id, planned: true, completed: true, readiness: c.recovery.readiness, durationMin: session?.estimatedMinutes });
-    setLogs({});
+    setDraft(null);
   };
 
   return (
@@ -126,7 +130,7 @@ export default function Train() {
         <div className="space-y-3 rise">
           {[...state.performance].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 40).map((l) => (
             <div key={l.date + l.exerciseId} className="card-2 px-4 py-3 text-sm flex items-center justify-between gap-3">
-              <div><span className="text-ink-3 tnum mr-3">{l.date}</span><span className="font-medium">{c.program.days.flatMap((d) => d.exercises).find((e) => e.exerciseId === l.exerciseId)?.name ?? l.exerciseId}</span></div>
+              <div><span className="text-ink-3 tnum mr-3">{l.date}</span><span className="font-medium">{EXERCISE_BY_ID[l.exerciseId]?.name ?? l.exerciseId}</span></div>
               <div className="tnum text-ink-2">{l.sets.map((s) => `${s.weightKg}×${s.reps}`).join(' · ')}</div>
             </div>
           ))}

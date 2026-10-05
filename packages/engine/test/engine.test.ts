@@ -17,6 +17,11 @@ import {
   linearTrend,
   rollingMean,
   EVIDENCE,
+  buildProgramPlan,
+  addDays,
+  buildCalendar,
+  phasesFor,
+  summarizeWeek,
   type UserState,
 } from '../src/index';
 
@@ -235,5 +240,73 @@ describe('evidence layer', () => {
       expect(['solid', 'probable', 'uncertain', 'approach']).toContain(e.level);
       expect(e.sources.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('programme périodisé & calendrier', () => {
+  const state = buildDemoState(TODAY);
+  const c = computeState(state, TODAY);
+  it('12 semaines, phases cohérentes avec l’objectif', () => {
+    expect(c.plan.weeksTotal).toBe(12);
+    expect(c.plan.weeks.length).toBe(12);
+    expect(c.plan.phases.map((p) => p.intent)).toEqual(['foundation', 'build', 'deload', 'intensify', 'consolidate']);
+    const fat = phasesFor({ ...state.profile, primaryGoal: 'fat_loss' });
+    expect(fat.some((p) => p.intent === 'diet_break')).toBe(true);
+    expect(fat.reduce((a, p) => a + p.weeks, 0)).toBe(12);
+    for (const g of ['muscle_gain', 'strength', 'energy', 'sleep', 'health'] as const) {
+      expect(phasesFor({ ...state.profile, primaryGoal: g }).reduce((a, p) => a + p.weeks, 0)).toBe(12);
+    }
+  });
+  it('la démo (8 semaines écoulées) est en semaine 9, phase intensification', () => {
+    expect(c.currentWeek?.weekNumber).toBe(9);
+    expect(c.currentPhase?.intent).toBe('intensify');
+    expect(c.brief.lines[0]?.label).toBe('Programme');
+  });
+  it('la phase module volume et RIR de la séance', () => {
+    expect(c.todayWorkout).not.toBeNull();
+    for (const e of c.todayWorkout!.exercises) expect(e.rirTarget).toBe(1);
+  });
+  it('deload → nutrition à maintenance', () => {
+    const plan = buildProgramPlan(state.profile, c.program);
+    const deloadWeek = plan.weeks.find((w) => w.isDeload)!;
+    const day = deloadWeek.sessions[0]!.date;
+    const s: UserState = { ...state, profile: { ...state.profile, createdAt: state.profile.createdAt } };
+    const cd = computeState(s, day);
+    expect(cd.currentPhase?.intent).toBe('deload');
+    expect(cd.nutrition.energyDeltaPct).toBe(0);
+    expect(cd.nutrition.strategy).toMatch(/maintenance/i);
+  });
+  it('calendrier : séances faites / manquées / prévues, mesures et photos', () => {
+    const ev = buildCalendar(state, c.plan, c.plan.startDate, c.plan.endDate, TODAY);
+    const sessions = ev.filter((e) => e.kind === 'session');
+    expect(sessions.length).toBe(36);
+    expect(sessions.some((e) => e.status === 'done')).toBe(true);
+    expect(sessions.some((e) => e.status === 'planned')).toBe(true);
+    expect(ev.some((e) => e.kind === 'photos')).toBe(true);
+    expect(ev.filter((e) => e.kind === 'measure').length).toBe(12);
+    const ws = summarizeWeek(state, c.plan, TODAY);
+    expect(ws?.weekNumber).toBe(9);
+  });
+});
+
+describe('plausibilité & dates', () => {
+  it('aucun aliment hors des bornes d’une assiette, sur plusieurs profils', () => {
+    const base = buildDemoState(TODAY);
+    const profiles = [base.profile, { ...base.profile, sex: 'female' as const, startWeightKg: 62, heightCm: 165, primaryGoal: 'fat_loss' as const, foodCultures: ['europe' as const] }, { ...base.profile, primaryGoal: 'muscle_gain' as const, startWeightKg: 70, dietaryPreferences: ['vegetarian'] }, { ...base.profile, foodCultures: ['maghreb' as const], dietaryPreferences: ['halal'] }];
+    for (const pr of profiles) for (const dt of ['training', 'rest'] as const) for (const seed of [0, 1, 2, 3, 4, 5, 6]) {
+      const st: UserState = { ...base, profile: pr, measurements: [{ date: TODAY, weightKg: pr.startWeightKg }] };
+      const t = computeNutritionTargets(st, TODAY, dt);
+      const plan = buildDayPlan(t, pr, seed);
+      for (const m of plan.meals) for (const it of m.items) {
+        expect(it.grams, `${pr.primaryGoal}/${dt}/${seed} ${it.foodId}`).toBeLessThanOrEqual(it.role === 'veg' ? 400 : it.role === 'dish' ? 500 : 350);
+        if (it.foodId === 'eggs') expect(it.grams).toBeLessThanOrEqual(220);
+      }
+      expect(plan.totals.p).toBeGreaterThan(t.proteinG * 0.8);
+    }
+  });
+  it('addDays est stable quel que soit le fuseau (pas de toISOString)', () => {
+    expect(addDays('2026-10-05', 1)).toBe('2026-10-06');
+    expect(addDays('2026-10-05', 0)).toBe('2026-10-05');
+    expect(addDays('2026-01-01', -1)).toBe('2025-12-31');
   });
 });

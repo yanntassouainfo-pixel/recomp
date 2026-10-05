@@ -1,8 +1,9 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { CalendarPlus, Download, Trash2 } from 'lucide-react';
-import { EVIDENCE, type AppMode, type LifeEvent, type LifeEventType, type NutritionPrecision } from '@recomp/engine';
+import { EVIDENCE, addDays, type AppMode, type BodyRegion, type LifeEvent, type LifeEventType, type NutritionPrecision } from '@recomp/engine';
 import { Card } from '@/components/ui/Card';
 import { Segmented, Sheet } from '@/components/ui/Primitives';
 import { EvidenceBadge } from '@/components/ui/Evidence';
@@ -40,8 +41,7 @@ export default function Profile() {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `recomp-export-${today()}.json`; a.click();
   };
   const addEvent = () => {
-    const end = new Date(today() + 'T00:00:00'); end.setDate(end.getDate() + ev.days - 1);
-    const e: LifeEvent = { id: 'ev_' + Math.random().toString(36).slice(2, 8), type: ev.type, startDate: today(), endDate: end.toISOString().slice(0, 10) };
+    const e: LifeEvent = { id: 'ev_' + Math.random().toString(36).slice(2, 8), type: ev.type, startDate: today(), endDate: addDays(today(), ev.days - 1) };
     addLifeEvent(e);
     addDecision({ date: today(), summary: `Life Mode : ${EVENTS.find((x) => x.v === ev.type)?.l} (${ev.days} j). Plan recomposé.`, why: 'La vie passe avant le plan ; on maintient, on reprend ensuite.', evidenceId: 'flex_meal_adherence' });
     setOpen(false);
@@ -52,7 +52,7 @@ export default function Profile() {
       <header className="rise">
         <div className="label">Profil</div>
         <h1 className="text-3xl font-extrabold tracking-tight mt-1">{p.displayName ?? 'Toi'} · {p.heightCm} cm · {p.startWeightKg} kg au départ</h1>
-        <p className="text-ink-2 mt-1">{p.priorityStatement ?? 'Objectif : ' + p.primaryGoal}</p>
+        <p className="text-ink-2 mt-1">{p.priorityStatement ?? 'Objectif : ' + ({ fat_loss: 'perdre du gras', muscle_gain: 'construire du muscle', recomposition: 'recomposition corporelle', athletic: 'devenir plus athlétique', strength: 'force', definition: 'définition musculaire', conditioning: 'condition physique', energy: 'énergie', sleep: 'sommeil', health: 'santé globale' } as Record<string, string>)[p.primaryGoal]}</p>
       </header>
 
       <section className="grid md:grid-cols-2 gap-4 rise rise-1">
@@ -86,6 +86,17 @@ export default function Profile() {
       </section>
 
       <section className="grid md:grid-cols-2 gap-4 rise rise-2">
+        <Card kicker="Profil progressif" title="Ce que le coach apprend de toi" accent="recovery">
+          <p className="text-xs text-ink-2">Complète quand tu veux. Chaque information change le programme ou les repas.</p>
+          <div><span className="label">Zones sensibles (exercices exclus, substitutions proposées)</span>
+            <div className="flex flex-wrap gap-2 mt-1.5">{(['shoulder', 'elbow', 'wrist', 'lower_back', 'hip', 'knee', 'ankle', 'neck'] as BodyRegion[]).map((r) => { const on = p.limitations.some((l) => l.region === r); return <button key={r} type="button" className="chip" data-on={on} onClick={() => updateProfile({ limitations: on ? p.limitations.filter((l) => l.region !== r) : [...p.limitations, { region: r }] })}>{({ shoulder: 'Épaule', elbow: 'Coude', wrist: 'Poignet', lower_back: 'Bas du dos', hip: 'Hanche', knee: 'Genou', ankle: 'Cheville', neck: 'Cou' } as Record<string, string>)[r]}</button>; })}</div>
+          </div>
+          <label className="block"><span className="label">Aliments que tu n’aimes pas (séparés par des virgules)</span><input className="input mt-1" defaultValue={p.dislikedFoods.join(', ')} onBlur={(e) => updateProfile({ dislikedFoods: e.target.value.split(',').map((x) => x.trim()).filter(Boolean) })} placeholder="ex. tofu, sardines" /></label>
+          <div><span className="label">Ce qui te ressemble</span>
+            <div className="flex flex-wrap gap-2 mt-1.5">{([['allOrNothing', 'Tout ou rien'], ['perfectionism', 'Perfectionniste'], ['emotionalEating', 'Manger sous émotion'], ['lowMotivation', 'Motivation en dents de scie'], ['decisionFatigue', 'Fatigue décisionnelle'], ['routineDifficulty', 'Routine difficile']] as const).map(([k, l]) => <button key={k} type="button" className="chip" data-on={Boolean(p.traits[k])} onClick={() => updateProfile({ traits: { ...p.traits, [k]: !p.traits[k] } })}>{l}</button>)}</div>
+            <p className="text-xs text-ink-3 mt-1.5">Le coach adapte son ton et ses priorités : « tu n’as pas besoin d’être parfait cette semaine ».</p>
+          </div>
+        </Card>
         <Card kicker="Evidence layer" title="Sur quoi repose le moteur">
           <ul className="space-y-2 text-sm max-h-80 overflow-auto pr-1">
             {Object.values(EVIDENCE).map((e) => (
@@ -95,17 +106,18 @@ export default function Profile() {
         </Card>
         <Card kicker="Données & confidentialité" title="Tes données t’appartiennent">
           <ul className="text-sm text-ink-2 space-y-1.5 list-disc pl-4">
-            <li>Mode démo : tout est stocké dans ce navigateur, rien n’est envoyé (sauf la question au coach si une clé IA est configurée côté serveur).</li>
-            <li>Avec un compte : authentification Supabase, isolation par ligne (RLS), photos dans un espace privé chiffré, URL signées.</li>
+            <li>Aujourd’hui : tout est stocké dans ce navigateur, en clair, sans compte. Sur la version en ligne, seule la question au coach et un résumé de ton profil (sans photos) peuvent être envoyés à un serveur, et uniquement si une clé IA est configurée ; sinon, rien ne quitte ton appareil.</li>
+            <li>À venir (comptes) : authentification, isolation par utilisateur et espace photos privé. Ces fonctions ne sont pas encore livrées ; nous ne les affichons pas comme acquises.</li>
             <li>Consentements séparés et révocables : analyse IA des photos ({p.consents.photoAiAnalysis ? 'accordé' : 'non accordé'}), amélioration produit ({p.consents.productImprovement ? 'accordé' : 'non accordé'}).</li>
             <li>Aucune photo ni donnée personnelle n’entraîne un modèle sans consentement explicite.</li>
+            <li><Link href="/confidentialite" className="underline">Politique de confidentialité</Link> · <Link href="/mentions-legales" className="underline">Mentions légales</Link></li>
           </ul>
           <div className="flex flex-wrap gap-2">
             <button className="btn btn-secondary btn-sm" onClick={exportData}><Download size={14} /> Exporter (JSON)</button>
             <button className="btn btn-ghost btn-sm text-[var(--danger)]" onClick={() => setConfirm(true)}><Trash2 size={14} /> Supprimer toutes mes données</button>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
-            <label className="flex items-center gap-2"><input type="checkbox" checked={p.consents.photoAiAnalysis} onChange={(e) => updateProfile({ consents: { ...p.consents, photoAiAnalysis: e.target.checked } })} /> Analyse IA des photos</label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={p.consents.photoAiAnalysis} onChange={(e) => updateProfile({ consents: { ...p.consents, photoAiAnalysis: e.target.checked } })} /> Analyse IA des photos <span className="text-ink-3">(fonction à venir, rien n’est analysé aujourd’hui)</span></label>
             <label className="flex items-center gap-2"><input type="checkbox" checked={p.consents.productImprovement} onChange={(e) => updateProfile({ consents: { ...p.consents, productImprovement: e.target.checked } })} /> Amélioration produit</label>
           </div>
         </Card>

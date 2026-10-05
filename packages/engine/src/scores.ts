@@ -56,6 +56,17 @@ export function strengthSeries(state: UserState): { date: ISODate; value: number
     .sort((a, b) => (a.date < b.date ? -1 : 1));
 }
 
+/** Variation de l'indice de force sur 28 jours (tendance linéaire), source unique pour score, KPI et revue. */
+export function strengthDelta28d(state: UserState, today: ISODate) {
+  return linearTrend(inWindow(strengthSeries(state), addDays(today, -27), today), 0.2);
+}
+
+/** Variation du tour de taille sur 28 jours (dernier point − premier point de la fenêtre). */
+export function waistDelta28d(state: UserState, today: ISODate): number | null {
+  const w = inWindow(waistSeries(state), addDays(today, -27), today);
+  return w.length >= 2 ? round(w[w.length - 1]!.value - w[0]!.value, 1) : null;
+}
+
 export function sessionAdherence(state: UserState, from: ISODate, to: ISODate): number | null {
   const planned = inWindow(state.sessions, from, to).filter((s) => s.planned);
   if (planned.length === 0) return null;
@@ -106,10 +117,10 @@ export function computeBodyCompositionScore(state: UserState, today: ISODate): B
     drivers.push({ key: 'waist', label: 'Tour de taille', signal, weight: 0.3, text: signalToText('waist', signal) });
   }
 
-  // Force : +3 % / mois ≈ bon
-  const strTrend = linearTrend(inWindow(strengthSeries(state), prevFrom, today), 0.2);
+  // Force : +3 % / mois ≈ bon — même fenêtre et même calcul que la revue hebdo et le KPI (strengthDelta28d)
+  const strTrend = strengthDelta28d(state, today);
   if (strTrend && strTrend.points >= 3) {
-    const perMonth = strTrend.slopePerWeek * 4;
+    const perMonth = strTrend.delta;
     const signal = clamp(perMonth / 3, -1, 1);
     drivers.push({ key: 'strength', label: 'Force', signal, weight: 0.2, text: signalToText('strength', signal) });
   }
