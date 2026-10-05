@@ -15,6 +15,8 @@ import { selectWeeklyHabits, type Habit } from './adaptation/habits';
 import type { BodyCompositionScore, RecoveryScore, VitalityScore } from './types';
 import { buildProgramPlan, phaseFor, weekFor, type PlanPhase, type ProgramPlan, type WeekPlan } from './plan/periodization';
 import { summarizeWeek, type WeekSummary } from './plan/calendar';
+import { assessWeightGoal, type WeightGoalAssessment } from './plan/weightGoal';
+import { currentWeight } from './nutrition/targets';
 
 export interface DailyBrief {
   date: ISODate;
@@ -37,6 +39,7 @@ export interface ComputedState {
   currentWeek: WeekPlan | null;
   currentPhase: PlanPhase | null;
   weekSummary: WeekSummary | null;
+  weightGoal: WeightGoalAssessment | null;
   todayWorkout: WorkoutDay | null;
   session: AdjustedSession | null;
   targetsByExercise: Record<string, NextTarget>;
@@ -78,6 +81,7 @@ export function computeState(state: UserState, today: ISODate): ComputedState {
   const currentWeek = weekFor(plan, today);
   const currentPhase = phaseFor(plan, today);
   const weekSummary = summarizeWeek(state, plan, today);
+  const weightGoal = assessWeightGoal(state.profile, currentWeight(state, today), today);
   const todayWorkout = isTrainingDay(state, program, today, plan);
   const lifeEvent = activeLifeEvent(state, today);
   const lifePlan = lifeEvent ? recomposeForEvent(state, lifeEvent) : null;
@@ -126,6 +130,7 @@ export function computeState(state: UserState, today: ISODate): ComputedState {
     currentWeek,
     currentPhase,
     weekSummary,
+    weightGoal,
     todayWorkout: phasedWorkout,
     session,
     targetsByExercise,

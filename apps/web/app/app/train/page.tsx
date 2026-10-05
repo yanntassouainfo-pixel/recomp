@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import { Check, Replace } from 'lucide-react';
 import { EXERCISE_BY_ID, substitutesFor, type PerformanceLog, type SetLog, type WorkoutDay } from '@recomp/engine';
 import { Card } from '@/components/ui/Card';
@@ -110,7 +111,7 @@ export default function Train() {
 
       {tab === 'program' && (
         <div className="space-y-4 rise">
-          <Card title={c.program.split} kicker="Ton programme" accent="muscle">
+          <Card title={c.program.split} kicker="Ton programme" accent="muscle" right={<Link href="/app/profile" className="text-sm font-medium text-ink-2 hover:text-ink">Changer le type</Link>}>
             <p className="text-sm text-ink-2">{c.program.rationale}</p>
             <div className="flex flex-wrap gap-2"><EvidenceBadge id="volume_hypertrophy" /><EvidenceBadge id="progressive_overload" /><span className="chip pointer-events-none">≈ {c.program.weeklySetsPerMuscleApprox} séries / muscle / semaine</span></div>
             {c.program.honestNotes.map((n) => <p key={n} className="text-sm card-2 p-3">{n}</p>)}

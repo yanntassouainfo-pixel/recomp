@@ -117,7 +117,13 @@ export interface Profile {
   trainingTimeOfDay: 'morning' | 'midday' | 'evening';
   /** Jours d'entraînement préférés 0=dimanche … 6=samedi */
   trainingDays: number[];
+  /** Type de programme : auto (selon niveau et objectif) ou choix explicite */
+  splitPreference?: SplitStyle;
+  /** Objectif de poids facultatif (kg). Jamais central : un repère, pas une sentence. */
+  targetWeightKg?: number | null;
 }
+
+export type SplitStyle = 'auto' | 'full_body' | 'upper_lower' | 'ppl';
 
 export interface Measurement {
   date: ISODate;

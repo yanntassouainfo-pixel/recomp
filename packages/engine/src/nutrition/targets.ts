@@ -119,6 +119,11 @@ export function computeNutritionTargets(state: UserState, today: ISODate, dayTyp
     delta += mods.reviewAdjustment;
     notes.push(`Ajustement décidé lors de ta revue hebdomadaire : ${mods.reviewAdjustment > 0 ? '+' : ''}${Math.round(mods.reviewAdjustment * 100)} %.`);
   }
+  if (!safeMode && p.targetWeightKg && p.targetWeightKg / ((p.heightCm / 100) ** 2) < 18.5 && delta < 0) {
+    delta = 0;
+    strategy = 'Maintenance — objectif de poids non programmable';
+    notes.push('Ton objectif de poids correspond à un IMC inférieur à 18,5 : aucun déficit n’est programmé vers ce poids. Parles-en à un médecin.');
+  }
   if (mods.maintenance && !safeMode) {
     delta = Math.max(delta, 0);
     strategy = `${mods.maintenance} — maintenance planifiée`;

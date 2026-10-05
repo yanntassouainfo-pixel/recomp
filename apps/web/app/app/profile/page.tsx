@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { CalendarPlus, Download, Trash2 } from 'lucide-react';
-import { EVIDENCE, addDays, type AppMode, type BodyRegion, type LifeEvent, type LifeEventType, type NutritionPrecision } from '@recomp/engine';
+import { EVIDENCE, addDays, type AppMode, type BodyRegion, type LifeEvent, type LifeEventType, type NutritionPrecision, type SplitStyle } from '@recomp/engine';
 import { Card } from '@/components/ui/Card';
 import { Segmented, Sheet } from '@/components/ui/Primitives';
 import { EvidenceBadge } from '@/components/ui/Evidence';
@@ -76,6 +76,11 @@ export default function Profile() {
           <div><span className="label">Mode</span><Segmented className="mt-1" value={p.mode} onChange={(v: AppMode) => updateProfile({ mode: v })} options={[{ value: 'simple', label: 'Simple' }, { value: 'busy', label: 'Busy' }, { value: 'performance', label: 'Performance' }]} /></div>
           <p className="text-xs text-ink-2">{p.mode === 'simple' ? 'Pas de jargon, pas de macros obligatoires : aujourd’hui, mange ceci, fais ceci, dors ceci.' : p.mode === 'busy' ? 'Minimum efficace : séances courtes, repas simples, pas de pesée des aliments.' : 'Suivi détaillé : charges, RIR, macros, périodisation, récupération.'}</p>
           <div><span className="label">Nutrition</span><Segmented className="mt-1" value={p.nutritionPrecision} onChange={(v: NutritionPrecision) => updateProfile({ nutritionPrecision: v })} options={[{ value: 'simple', label: 'Portions' }, { value: 'precise', label: 'Grammes' }]} /></div>
+          <div><span className="label">Type de programme</span>
+            <div className="flex flex-wrap gap-2 mt-1.5">{([['auto', 'Auto'], ['full_body', 'Corps entier'], ['upper_lower', 'Haut / Bas'], ['ppl', 'Push / Pull / Legs']] as [SplitStyle, string][]).filter(([v]) => v === 'auto' || c.program.availableStyles.includes(v as Exclude<SplitStyle, 'auto'>)).map(([v, l]) => <button key={v} type="button" className="chip" data-on={(p.splitPreference ?? 'auto') === v} onClick={() => updateProfile({ splitPreference: v })}>{l}</button>)}</div>
+            <p className="text-xs text-ink-2 mt-1.5">Actuellement : <span className="font-medium text-ink">{c.program.split}</span>. {c.program.rationale.split('. ').slice(1, 2).join('. ')}.</p>
+          </div>
+          <label className="block"><span className="label">Objectif de poids (facultatif, kg)</span><input className="input mt-1" type="number" step="0.5" value={p.targetWeightKg ?? ''} onChange={(e) => updateProfile({ targetWeightKg: e.target.value === '' ? null : Number(e.target.value) })} placeholder="aucun" />{c.weightGoal && <p className="text-xs text-ink-2 mt-1.5">{c.weightGoal.message}</p>}</label>
           <div className="grid grid-cols-2 gap-3 text-sm">
             <label className="block"><span className="label">Séances / semaine</span><input className="input mt-1" type="number" min={2} max={6} value={p.sessionsPerWeek} onChange={(e) => updateProfile({ sessionsPerWeek: Number(e.target.value) })} /></label>
             <label className="block"><span className="label">Durée (min)</span><input className="input mt-1" type="number" min={20} max={120} step={5} value={p.sessionMinutes} onChange={(e) => updateProfile({ sessionMinutes: Number(e.target.value) })} /></label>

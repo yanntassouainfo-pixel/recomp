@@ -17,6 +17,7 @@ export * from './adaptation/alerts';
 export * from './adaptation/habits';
 export * from './plan/periodization';
 export * from './plan/calendar';
+export * from './plan/weightGoal';
 export * from './compute';
 export * from './report';
 export * from './coach/rules';

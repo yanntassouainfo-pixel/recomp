@@ -22,6 +22,13 @@ Sur la page d'accueil : **« Explorer avec le profil démo »** charge le cas fo
 
 Sans clé IA, le **coach à règles** répond déjà aux situations types. Pour la conversation libre, copier `apps/web/.env.example` en `.env.local` et renseigner `ANTHROPIC_API_KEY` (ou `OPENAI_API_KEY`, ou un endpoint compatible). Le LLM ne calcule jamais une cible : il reformule et explique les sorties du moteur, sous garde-fous.
 
+## Où mettre la clé Anthropic (ou OpenAI)
+
+- **En local** : copier `apps/web/.env.example` en `apps/web/.env.local` et renseigner `ANTHROPIC_API_KEY=sk-ant-…`. Relancer `npm run dev`. Le fichier est ignoré par git : la clé ne sera jamais poussée.
+- **En production** : la clé doit rester côté serveur. GitHub Pages est un hébergement statique sans serveur, donc **aucune clé n'y est possible** : la démo publique utilise le coach déterministe. Pour la conversation libre par IA, déployer `apps/web` sur un hébergeur avec serveur (Vercel, Netlify, Cloudflare, VPS) et déclarer `ANTHROPIC_API_KEY` dans ses variables d'environnement.
+- **Jamais** dans le code, dans Builder, ni dans une variable `NEXT_PUBLIC_*` (celles-ci finissent dans le bundle public).
+- Avant d'ouvrir l'IA à de vrais utilisateurs : voir `docs/audit-oya/03-securite-sekou.md` (authentification, rate-limit, consentement « coach IA tiers »).
+
 ## Structure
 
 ```

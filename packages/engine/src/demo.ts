@@ -43,6 +43,8 @@ export function demoProfile(createdAt: ISODate): Profile {
     mealsPerDay: 4,
     trainingTimeOfDay: 'evening',
     trainingDays: [1, 3, 5],
+    splitPreference: 'auto',
+    targetWeightKg: null,
   };
 }
 

@@ -123,7 +123,9 @@ function goalStatementFor(profile: Profile): string {
     case 'athletic':
       return `12 semaines pour transformer la composition de tes ${w} kg : tour de taille en baisse, force en hausse, poids à peu près stable.`;
     case 'fat_loss':
-      return `12 semaines pour perdre du gras sans perdre de muscle : ≤ 0,7 % du poids par semaine, force maintenue.`;
+      return profile.targetWeightKg
+        ? `Bloc de 12 semaines vers ${profile.targetWeightKg} kg : ≤ 0,7 % du poids par semaine, force maintenue. Les blocs s’enchaînent jusqu’à l’objectif, avec une pause diète à chaque bloc.`
+        : `12 semaines pour perdre du gras sans perdre de muscle : ≤ 0,7 % du poids par semaine, force maintenue.`;
     case 'muscle_gain':
       return `12 semaines pour construire du muscle : surplus léger, volume progressif, tour de taille sous surveillance.`;
     case 'strength':

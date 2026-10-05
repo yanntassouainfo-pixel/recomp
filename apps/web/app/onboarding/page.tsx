@@ -44,6 +44,7 @@ export default function Onboarding() {
   const [goals, setGoals] = useState<Goal[]>(['recomposition']);
   const [primary, setPrimary] = useState<Goal>('recomposition');
   const [priority, setPriority] = useState('');
+  const [targetWeight, setTargetWeight] = useState<number | ''>('');
   const [mode, setMode] = useState<AppMode>('simple');
   const [precision, setPrecision] = useState<NutritionPrecision>('simple');
   const [risk, setRisk] = useState({ pregnant: false, minor: false, medicalHistory: false, eatingDisorderHistory: false });
@@ -77,7 +78,7 @@ export default function Onboarding() {
       goals: goals.length ? goals : [primary], primaryGoal: primary, visualGoals: visual, fatStorage: visual.includes('flat_stomach') ? ['abdomen'] : [], priorityStatement: priority || undefined,
       mode: workHours >= 50 && mode === 'simple' ? 'busy' : mode, nutritionPrecision: precision, foodCultures: cultures, dietaryPreferences: prefs, allergies, dislikedFoods: [], limitations: [],
       risk: { ...risk, minor }, consents: { photoAiAnalysis: consent.photoAiAnalysis, productImprovement: consent.productImprovement, notifications: true, healthData: consent.healthData, consentedAt: new Date().toISOString() }, traits: {}, fastingWindow: null,
-      mealsPerDay: 3, trainingTimeOfDay: 'evening', trainingDays: [],
+      mealsPerDay: 3, trainingTimeOfDay: 'evening', trainingDays: [], splitPreference: 'auto', targetWeightKg: targetWeight === '' ? null : Number(targetWeight),
     };
     create(profile);
     router.push('/app');
@@ -125,6 +126,12 @@ export default function Onboarding() {
       <div className="flex flex-wrap gap-2">{GOALS.map((g) => <Chip key={g.v} on={primary === g.v} onClick={() => { setPrimary(g.v); if (!goals.includes(g.v)) setGoals([g.v, ...goals]); }}>{g.l}</Chip>)}</div>
       <div><span className="label">Objectifs secondaires</span><div className="flex flex-wrap gap-2 mt-1.5">{GOALS.filter((g) => g.v !== primary).map((g) => <Chip key={g.v} on={goals.includes(g.v)} onClick={() => toggle(goals, g.v, setGoals)}>{g.l}</Chip>)}</div></div>
       <label className="block"><span className="label">En une phrase (facultatif)</span><input className="input mt-1" placeholder="ex. Être plus dessiné sans perdre ma carrure" value={priority} onChange={(e) => setPriority(e.target.value)} /></label>
+      <div className="card-2 p-4">
+        <label className="block"><span className="label">Objectif de poids (facultatif)</span>
+          <div className="flex items-center gap-3 mt-1"><input className="input w-32" type="number" step="0.5" placeholder="kg" value={targetWeight} onChange={(e) => setTargetWeight(e.target.value === '' ? '' : Number(e.target.value))} /><span className="text-sm text-ink-2">{targetWeight !== '' && weight ? (targetWeight < weight ? `−${(weight - targetWeight).toFixed(1)} kg, soit environ ${Math.ceil(Math.log(targetWeight / weight) / Math.log(1 - 0.006))} semaines à un rythme qui préserve le muscle` : targetWeight > weight ? `+${(targetWeight - weight).toFixed(1)} kg, soit environ ${Math.ceil(Math.log(targetWeight / weight) / Math.log(1 + 0.003))} semaines pour une prise surtout musculaire` : 'Poids stable : l’objectif devient la composition') : 'Un repère, pas une sentence : le tour de taille et la force comptent autant.'}</span></div>
+        </label>
+        {targetWeight !== '' && height && targetWeight / ((height / 100) ** 2) < 18.5 && <p className="text-xs text-[var(--danger)] mt-2">Ce poids correspond à un IMC inférieur à 18,5 : le coach ne programmera pas de déficit vers cette cible.</p>}
+      </div>
       <div><span className="label">Mode</span><Segmented className="mt-1" value={mode} onChange={setMode} options={[{ value: 'simple', label: 'Simple' }, { value: 'busy', label: 'Busy (minimum efficace)' }, { value: 'performance', label: 'Performance' }]} /></div>
       <div><span className="label">Nutrition</span><Segmented className="mt-1" value={precision} onChange={setPrecision} options={[{ value: 'simple', label: 'Portions visuelles' }, { value: 'precise', label: 'Grammes & macros' }]} /><p className="text-xs text-ink-3 mt-1.5">Tu peux changer à tout moment. Personne ne t’imposera le comptage.</p></div>
     </div>,

@@ -19,6 +19,8 @@ import {
   EVIDENCE,
   buildProgramPlan,
   addDays,
+  chooseSplitStyle,
+  assessWeightGoal,
   buildCalendar,
   phasesFor,
   summarizeWeek,
@@ -308,5 +310,32 @@ describe('plausibilité & dates', () => {
     expect(addDays('2026-10-05', 1)).toBe('2026-10-06');
     expect(addDays('2026-10-05', 0)).toBe('2026-10-05');
     expect(addDays('2026-01-01', -1)).toBe('2025-12-31');
+  });
+});
+
+describe('adaptation du programme & objectif de poids', () => {
+  const base = buildDemoState(TODAY).profile;
+  it('le split dépend du niveau, de l’objectif et de la préférence', () => {
+    expect(chooseSplitStyle({ ...base, level: 'beginner', sessionsPerWeek: 3 }).style).toBe('full_body');
+    expect(chooseSplitStyle({ ...base, level: 'intermediate', sessionsPerWeek: 3, primaryGoal: 'muscle_gain' }).style).toBe('upper_lower');
+    expect(chooseSplitStyle({ ...base, level: 'advanced', sessionsPerWeek: 3, primaryGoal: 'muscle_gain' }).style).toBe('ppl');
+    expect(chooseSplitStyle({ ...base, level: 'intermediate', sessionsPerWeek: 5 }).style).toBe('ppl');
+    expect(chooseSplitStyle({ ...base, level: 'intermediate', sessionsPerWeek: 3, primaryGoal: 'energy' }).style).toBe('full_body');
+    expect(chooseSplitStyle({ ...base, level: 'beginner', sessionsPerWeek: 3, splitPreference: 'ppl' }).style).toBe('ppl');
+    const prog = generateProgram({ ...base, level: 'intermediate', sessionsPerWeek: 3, primaryGoal: 'muscle_gain' });
+    expect(prog.days.map((d) => d.name)).toEqual(['Haut du corps', 'Bas du corps', 'Corps entier']);
+    expect(prog.availableStyles).toContain('ppl');
+  });
+  it('objectif de poids : durée réaliste, refus sous IMC 18,5', () => {
+    const g = assessWeightGoal({ ...base, targetWeightKg: 85 }, 93, TODAY)!;
+    expect(g.direction).toBe('lose');
+    expect(g.weeks).toBeGreaterThan(12);
+    expect(g.weeks).toBeLessThan(30);
+    expect(g.safe).toBe(true);
+    const bad = assessWeightGoal({ ...base, targetWeightKg: 60 }, 93, TODAY)!;
+    expect(bad.safe).toBe(false);
+    const st: UserState = { ...buildDemoState(TODAY), profile: { ...base, targetWeightKg: 60, primaryGoal: 'fat_loss' } };
+    expect(computeNutritionTargets(st, TODAY, 'rest').energyDeltaPct).toBe(0);
+    expect(assessWeightGoal({ ...base, targetWeightKg: null }, 93, TODAY)).toBeNull();
   });
 });

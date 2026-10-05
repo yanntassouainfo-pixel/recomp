@@ -1,4 +1,4 @@
-import type { Profile, VisualGoal } from '../types';
+import type { Profile, SplitStyle, VisualGoal } from '../types';
 import { candidates, EXERCISE_BY_ID, type Exercise, type MovementPattern } from './exercises';
 
 export interface PlannedExercise {
@@ -24,6 +24,9 @@ export interface WorkoutDay {
 
 export interface Program {
   split: string;
+  splitStyle: Exclude<SplitStyle, 'auto'>;
+  /** styles possibles pour ce nombre de séances (pour le sélecteur) */
+  availableStyles: Exclude<SplitStyle, 'auto'>[];
   rationale: string;
   weeklySetsPerMuscleApprox: number;
   days: WorkoutDay[];
@@ -36,16 +39,16 @@ const SPLITS: Record<number, { name: string; days: { name: string; focus: string
   2: {
     name: 'Full body ×2',
     days: [
-      { name: 'Full Body A', focus: 'Corps entier — accent bas du corps', slots: fb(['squat', 'horizontal_push', 'horizontal_pull', 'hinge', 'vertical_push', 'core', 'iso_shoulders']) },
-      { name: 'Full Body B', focus: 'Corps entier — accent haut du corps', slots: fb(['hinge', 'vertical_pull', 'horizontal_push', 'lunge', 'horizontal_pull', 'iso_arms_biceps', 'iso_arms_triceps']) },
+      { name: 'Corps entier A', focus: 'Accent bas du corps', slots: fb(['squat', 'horizontal_push', 'horizontal_pull', 'hinge', 'vertical_push', 'core', 'iso_shoulders']) },
+      { name: 'Corps entier B', focus: 'Accent haut du corps', slots: fb(['hinge', 'vertical_pull', 'horizontal_push', 'lunge', 'horizontal_pull', 'iso_arms_biceps', 'iso_arms_triceps']) },
     ],
   },
   3: {
     name: 'Full body A/B/C',
     days: [
-      { name: 'Full Body A', focus: 'Squat + poussée horizontale + tirage', slots: fb(['squat', 'horizontal_push', 'horizontal_pull', 'iso_shoulders', 'core', 'iso_arms_triceps', 'iso_calves']) },
-      { name: 'Full Body B', focus: 'Charnière + poussée verticale + tirage vertical', slots: fb(['hinge', 'vertical_push', 'vertical_pull', 'lunge', 'iso_arms_biceps', 'core', 'iso_shoulders']) },
-      { name: 'Full Body C', focus: 'Volume & isolation', slots: fb(['lunge', 'horizontal_push', 'horizontal_pull', 'hinge', 'iso_shoulders', 'iso_legs', 'core']) },
+      { name: 'Corps entier A', focus: 'Squat + poussée horizontale + tirage', slots: fb(['squat', 'horizontal_push', 'horizontal_pull', 'iso_shoulders', 'core', 'iso_arms_triceps', 'iso_calves']) },
+      { name: 'Corps entier B', focus: 'Charnière + poussée verticale + tirage vertical', slots: fb(['hinge', 'vertical_push', 'vertical_pull', 'lunge', 'iso_arms_biceps', 'core', 'iso_shoulders']) },
+      { name: 'Corps entier C', focus: 'Volume & isolation', slots: fb(['lunge', 'horizontal_push', 'horizontal_pull', 'hinge', 'iso_shoulders', 'iso_legs', 'core']) },
     ],
   },
   4: {
@@ -80,6 +83,79 @@ const SPLITS: Record<number, { name: string; days: { name: string; focus: string
   },
 };
 
+const ALT_SPLITS: Record<string, { name: string; days: { name: string; focus: string; slots: Slot[] }[] }> = {
+  '3:upper_lower': {
+    name: 'Haut / Bas / Corps entier',
+    days: [
+      { name: 'Haut du corps', focus: 'Poussée et tirage', slots: fb(['horizontal_push', 'horizontal_pull', 'vertical_push', 'vertical_pull', 'iso_shoulders', 'iso_arms_biceps', 'iso_arms_triceps']) },
+      { name: 'Bas du corps', focus: 'Squat, charnière, unilatéral', slots: fb(['squat', 'hinge', 'lunge', 'iso_legs', 'iso_calves', 'core', 'carry']) },
+      { name: 'Corps entier', focus: 'Volume et points faibles', slots: fb(['hinge', 'horizontal_push', 'vertical_pull', 'lunge', 'iso_shoulders', 'core', 'iso_arms_biceps']) },
+    ],
+  },
+  '3:ppl': {
+    name: 'Push / Pull / Legs',
+    days: [
+      { name: 'Push', focus: 'Pectoraux, épaules, triceps', slots: fb(['horizontal_push', 'vertical_push', 'horizontal_push', 'iso_shoulders', 'iso_arms_triceps', 'core', 'iso_shoulders']) },
+      { name: 'Pull', focus: 'Dos, biceps, arrière d’épaules', slots: fb(['vertical_pull', 'horizontal_pull', 'horizontal_pull', 'iso_shoulders', 'iso_arms_biceps', 'carry', 'core']) },
+      { name: 'Legs', focus: 'Jambes et fessiers', slots: fb(['squat', 'hinge', 'lunge', 'iso_legs', 'iso_calves', 'core', 'carry']) },
+    ],
+  },
+  '4:ppl': {
+    name: 'Push / Pull / Legs / Corps entier',
+    days: [
+      { name: 'Push', focus: 'Pectoraux, épaules, triceps', slots: fb(['horizontal_push', 'vertical_push', 'horizontal_push', 'iso_shoulders', 'iso_arms_triceps', 'core', 'iso_shoulders']) },
+      { name: 'Pull', focus: 'Dos, biceps, arrière d’épaules', slots: fb(['vertical_pull', 'horizontal_pull', 'horizontal_pull', 'iso_shoulders', 'iso_arms_biceps', 'carry', 'core']) },
+      { name: 'Legs', focus: 'Jambes et fessiers', slots: fb(['squat', 'hinge', 'lunge', 'iso_legs', 'iso_calves', 'core', 'carry']) },
+      { name: 'Corps entier', focus: 'Points faibles et volume', slots: fb(['hinge', 'horizontal_push', 'vertical_pull', 'lunge', 'iso_shoulders', 'core', 'iso_arms_biceps']) },
+    ],
+  },
+  '4:full_body': {
+    name: 'Corps entier ×4',
+    days: [
+      { name: 'Corps entier A', focus: 'Squat + poussée horizontale', slots: fb(['squat', 'horizontal_push', 'horizontal_pull', 'iso_shoulders', 'core', 'iso_calves', 'iso_arms_triceps']) },
+      { name: 'Corps entier B', focus: 'Charnière + poussée verticale', slots: fb(['hinge', 'vertical_push', 'vertical_pull', 'lunge', 'iso_arms_biceps', 'core', 'iso_shoulders']) },
+      { name: 'Corps entier C', focus: 'Unilatéral + tirage', slots: fb(['lunge', 'horizontal_pull', 'horizontal_push', 'iso_legs', 'iso_shoulders', 'core', 'carry']) },
+      { name: 'Corps entier D', focus: 'Volume et isolation', slots: fb(['hinge', 'vertical_pull', 'horizontal_push', 'squat', 'iso_arms_biceps', 'iso_arms_triceps', 'core']) },
+    ],
+  },
+  '2:upper_lower': {
+    name: 'Haut / Bas',
+    days: [
+      { name: 'Haut du corps', focus: 'Poussée et tirage', slots: fb(['horizontal_push', 'horizontal_pull', 'vertical_push', 'vertical_pull', 'iso_shoulders', 'iso_arms_biceps', 'iso_arms_triceps']) },
+      { name: 'Bas du corps', focus: 'Squat, charnière, unilatéral', slots: fb(['squat', 'hinge', 'lunge', 'iso_legs', 'iso_calves', 'core', 'carry']) },
+    ],
+  },
+};
+
+/** Styles disponibles selon le nombre de séances. */
+export function availableSplitStyles(n: number): Exclude<SplitStyle, 'auto'>[] {
+  if (n <= 2) return ['full_body', 'upper_lower'];
+  if (n === 3) return ['full_body', 'upper_lower', 'ppl'];
+  if (n === 4) return ['upper_lower', 'ppl', 'full_body'];
+  return ['ppl', 'upper_lower'];
+}
+
+/**
+ * Choix du type de programme : la préférence explicite gagne ; sinon, niveau et objectif décident.
+ * Débutant → corps entier (fréquence, apprentissage). Intermédiaire/avancé en prise de muscle, définition
+ * ou athlétique → Haut/Bas (3–4 séances) ou PPL (5–6). Force → Haut/Bas. Objectifs santé/énergie → corps entier.
+ */
+export function chooseSplitStyle(profile: Profile): { style: Exclude<SplitStyle, 'auto'>; why: string } {
+  const n = Math.min(6, Math.max(2, profile.sessionsPerWeek));
+  const avail = availableSplitStyles(n);
+  const pref = profile.splitPreference ?? 'auto';
+  if (pref !== 'auto' && avail.includes(pref)) return { style: pref, why: 'Type de programme choisi dans ton profil.' };
+  if (profile.level === 'beginner') return { style: avail.includes('full_body') ? 'full_body' : avail[0]!, why: 'Débutant : chaque muscle 2 à 3 fois par semaine sur des mouvements de base, pour apprendre vite et progresser à chaque séance.' };
+  const g = profile.primaryGoal;
+  const hyper = ['muscle_gain', 'definition', 'athletic', 'recomposition'].includes(g);
+  if (n >= 5) return { style: 'ppl', why: `${n} séances : Push / Pull / Legs répète chaque groupe deux fois par semaine avec plus de volume par séance.` };
+  if (n === 4) return { style: 'upper_lower', why: '4 séances : Haut / Bas ×2 donne deux passages par muscle avec des séances plus ciblées qu’en corps entier.' };
+  if (n === 3 && hyper && profile.level === 'advanced') return { style: 'ppl', why: 'Avancé, 3 séances : Push / Pull / Legs concentre le volume par groupe ; chaque muscle passe une fois par semaine à haute dose.' };
+  if (n === 3 && hyper) return { style: 'upper_lower', why: 'Intermédiaire, 3 séances : Haut / Bas / Corps entier garde deux passages par muscle tout en ciblant davantage que trois séances identiques.' };
+  if (n === 3 && g === 'strength') return { style: 'upper_lower', why: 'Force : Haut / Bas / Corps entier laisse plus de place aux mouvements lourds et à leur récupération.' };
+  return { style: avail.includes('full_body') ? 'full_body' : avail[0]!, why: 'Corps entier : le format le plus robuste quand la régularité compte plus que la spécialisation.' };
+}
+
 function fb(patterns: MovementPattern[]): Slot[] {
   return patterns.map((p, i) => ({ pattern: p, priority: i, label: p }));
 }
@@ -99,7 +175,9 @@ export function exerciseCount(sessionMinutes: number, mode: Profile['mode']): nu
 
 export function generateProgram(profile: Profile): Program {
   const n = Math.min(6, Math.max(2, profile.sessionsPerWeek));
-  const split = SPLITS[n]!;
+  const chosen = chooseSplitStyle(profile);
+  const defaultStyle: Exclude<SplitStyle, 'auto'> = n <= 3 ? 'full_body' : n === 4 ? 'upper_lower' : n === 5 ? 'upper_lower' : 'ppl';
+  const split = chosen.style === defaultStyle ? SPLITS[n]! : ALT_SPLITS[`${n}:${chosen.style}`] ?? SPLITS[n]!;
   const excluded = profile.limitations.map((l) => l.region);
   const count = exerciseCount(profile.sessionMinutes, profile.mode);
   const honestNotes: string[] = [];
@@ -159,11 +237,11 @@ export function generateProgram(profile: Profile): Program {
   const totalSets = days.reduce((a, d) => a + d.exercises.reduce((b, e) => b + e.sets, 0), 0);
   const weeklySetsPerMuscleApprox = Math.round((totalSets * 1.6) / 8); // approximation grossière : 8 groupes, composés comptent ~1,6
 
-  const rationale = `${n} séances/semaine → ${split.name}. Chaque muscle est travaillé au moins 2×/semaine, ce que les données associent à une meilleure hypertrophie à volume égal. ${count} exercices par séance pour tenir en ~${profile.sessionMinutes} min.`;
+  const rationale = `${n} séances/semaine → ${split.name}. ${chosen.why} ${count} exercices par séance pour tenir en ~${profile.sessionMinutes} min. Tu peux changer le type de programme dans ton profil.`;
 
   if (profile.limitations.length) honestNotes.push(`Limitations prises en compte (${profile.limitations.map((l) => l.region).join(', ')}) : exercices qui sollicitent ces zones exclus, substitutions proposées. En cas de douleur persistante, consulte un professionnel.`);
 
-  return { split: split.name, rationale, weeklySetsPerMuscleApprox, days, honestNotes };
+  return { split: split.name, splitStyle: chosen.style, availableStyles: availableSplitStyles(n), rationale, weeklySetsPerMuscleApprox, days, honestNotes };
 }
 
 function isCompoundPattern(p: MovementPattern): boolean {

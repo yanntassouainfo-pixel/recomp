@@ -10,7 +10,7 @@ import { Segmented, Sheet, TrendBadge } from '@/components/ui/Primitives';
 import { EvidenceBadge } from '@/components/ui/Evidence';
 import { useComputed } from '@/lib/useComputed';
 import { today, useStore } from '@/lib/store';
-import { fmtDate } from '@/lib/format';
+import { cx, fmtDate } from '@/lib/format';
 
 export default function Body() {
   const { state, computed: c } = useComputed();
@@ -90,6 +90,19 @@ export default function Body() {
           <TrendChart raw={c.series.weight} smooth={c.series.weightRolling} color={accentColor('body')} height={200} />
           <p className="text-xs text-ink-3">Les points gris sont les pesées ; la ligne, la tendance. Seule la ligne compte.</p>
         </Card>
+        {c.weightGoal && (
+          <Card accent="body" kicker="Objectif de poids" title={`${c.weightGoal.currentKg} → ${c.weightGoal.targetKg} kg`} right={<EvidenceBadge id={c.weightGoal.evidenceId} />} className="lg:col-span-2">
+            <div className="flex flex-wrap items-end gap-6">
+              <Stat size="md" value={c.weightGoal.direction === 'hold' ? '0' : `${c.weightGoal.deltaKg > 0 ? '+' : ''}${c.weightGoal.deltaKg}`} unit="kg" sub="restant" />
+              {c.weightGoal.direction !== 'hold' && <Stat size="md" value={c.weightGoal.weeks} unit="semaines" sub={`à ≤ ${c.weightGoal.ratePctPerWeek} %/sem · vers le ${fmtDate(c.weightGoal.etaDate)}`} />}
+              <div className="flex-1 min-w-[220px]">
+                <div className="h-2 rounded-full bg-surface-2 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.round(Math.min(100, Math.max(0, (Math.abs(c.weightGoal.targetKg - state.profile.startWeightKg) < 0.1 ? 100 : (1 - Math.abs(c.weightGoal.deltaKg) / Math.abs(c.weightGoal.targetKg - state.profile.startWeightKg)) * 100))))}%`, background: 'var(--accent-body)' }} /></div>
+                <div className="text-xs text-ink-3 mt-1 tnum">Départ {state.profile.startWeightKg} kg · cible {c.weightGoal.targetKg} kg</div>
+              </div>
+            </div>
+            <p className={cx('text-sm', c.weightGoal.safe ? 'text-ink-2' : 'text-[var(--danger)]')}>{c.weightGoal.message}</p>
+          </Card>
+        )}
         <Card accent="muscle" kicker="Muscle" title="Indice de force (mouvements clés)" right={<EvidenceBadge id="progressive_overload" />}>
           <div className="flex items-end gap-4"><Stat value={c.series.strength.length ? c.series.strength[c.series.strength.length - 1]!.value.toFixed(0) : '—'} unit="/ 100 au départ" />{c.series.strength.length > 1 && <TrendBadge delta={c.series.strength[c.series.strength.length - 1]!.value - 100} unit=" %" goodWhen="up" />}</div>
           <TrendChart smooth={c.series.strength} color={accentColor('muscle')} height={200} reference={100} />
