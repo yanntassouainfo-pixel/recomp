@@ -5,6 +5,10 @@
 
 Ce dépôt contient l'analyse produit, l'architecture, le design system, le **Body Recomposition Engine** (TypeScript pur, testé), l'orchestrateur IA multi-fournisseurs, le schéma Supabase, l'application web Next.js et le scaffold mobile Expo.
 
+## Démo en ligne
+
+https://yanntassouainfo-pixel.github.io/recomp/ — export statique déployé par GitHub Actions (coach déterministe, données dans le navigateur).
+
 ## Démarrer
 
 ```bash

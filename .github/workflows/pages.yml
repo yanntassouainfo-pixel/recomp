@@ -19,6 +19,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Source Pages = GitHub Actions (remplace la publication de branche)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/pages" -f build_type=workflow
       - uses: actions/setup-node@v4
         with:
           node-version: 22
