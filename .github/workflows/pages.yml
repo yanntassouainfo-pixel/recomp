@@ -21,15 +21,17 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
       - run: npm test
       - run: npm audit --omit=dev --audit-level=critical
       - name: Build static export (sans route API — le coach utilise le moteur côté client)
         run: |
+          node -v && npm -v
           rm -rf apps/web/app/api
           STATIC_EXPORT=1 npm run build -w apps/web
+          ls apps/web/out | head -20
           touch apps/web/out/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:
