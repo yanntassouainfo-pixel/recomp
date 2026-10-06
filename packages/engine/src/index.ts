@@ -10,6 +10,7 @@ export * from './training/exercises';
 export * from './training/program';
 export * from './training/progression';
 export * from './training/readiness';
+export * from './training/analyze';
 export * from './adaptation/plateau';
 export * from './adaptation/review';
 export * from './adaptation/lifeMode';

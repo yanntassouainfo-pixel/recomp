@@ -1,12 +1,14 @@
 'use client';
 import { useState } from 'react';
-import { adaptHabitualDish, APPROACHES, FOODS, TRADITIONAL_DISHES, type NutritionPrecision } from '@recomp/engine';
+import { adaptHabitualDish, APPROACHES, FOODS, TRADITIONAL_DISHES, buildDayPlan, daySeed, fitMealTo, sameBenefits, swapMealItem, type Meal, type NutritionPrecision } from '@recomp/engine';
+import { Check, Shuffle, Undo2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { PlateDiagram } from '@/components/ui/PlateDiagram';
 import { Segmented, Sheet } from '@/components/ui/Primitives';
 import { EvidenceBadge, WhyButton } from '@/components/ui/Evidence';
 import { useComputed } from '@/lib/useComputed';
 import { today, useStore } from '@/lib/store';
+import { cx } from '@/lib/format';
 
 export default function Food() {
   const { state, computed: c } = useComputed();
@@ -15,11 +17,18 @@ export default function Food() {
   const [dish, setDish] = useState<string>('sauce_feuille');
   const [carb, setCarb] = useState<string>('rice_white');
   const [logOpen, setLogOpen] = useState(false);
+  const [variants, setVariants] = useState<Record<string, number>>({});
+  const [swaps, setSwaps] = useState<Record<string, [string, string][]>>({});
   const [log, setLog] = useState({ proteinServings: 3, vegServings: 3, carbServings: 2, fatServings: 2, waterMl: 2000, flexMeal: false });
   if (!state || !c) return null;
   const p = state.profile;
   const simple = p.nutritionPrecision === 'simple';
   const n = c.nutrition;
+  const basePlan = Object.keys(variants).length ? buildDayPlan(n, p, daySeed(today()), variants) : c.dayPlan;
+  const original = (id: string) => c.dayPlan.meals.find((m) => m.id === id);
+  const dayPlan = { ...basePlan, meals: basePlan.meals.map((m) => { const o = original(m.id); const fitted = variants[m.id] && o ? fitMealTo(m as Meal, o.macros) : (m as Meal); return (swaps[m.id] ?? []).reduce((acc, [from, to]) => fitMealTo(swapMealItem(acc, from, to), (o ?? m).macros), fitted); }) };
+  const shuffle = (id: string) => { let v = Math.floor(Math.random() * 40) + 1; if (v === (variants[id] ?? 0)) v += 1; setVariants({ ...variants, [id]: v }); setSwaps({ ...swaps, [id]: [] }); };
+  const reset = (id: string) => { const nv = { ...variants }; delete nv[id]; setVariants(nv); setSwaps({ ...swaps, [id]: [] }); };
   const habitual = adaptHabitualDish(dish, carb, n, 0.35);
   const carbs = FOODS.filter((f) => f.category === 'carb');
 
@@ -29,7 +38,7 @@ export default function Food() {
         <div>
           <div className="label">Nutrition · {c.brief.dayType === 'training' ? 'jour d’entraînement' : 'jour de repos'}</div>
           <h1 className="text-3xl font-extrabold tracking-tight mt-1">Qu’est-ce que je mange aujourd’hui ?</h1>
-          <p className="text-ink-2 mt-1 max-w-2xl">{n.strategy}. {c.dayPlan.structure}</p>
+          <p className="text-ink-2 mt-1 max-w-2xl">{n.strategy}. {dayPlan.structure}</p>
         </div>
         <Segmented value={p.nutritionPrecision} onChange={(v: NutritionPrecision) => updateProfile({ nutritionPrecision: v })} options={[{ value: 'simple', label: 'Mode simple' }, { value: 'precise', label: 'Mode précis' }]} />
       </header>
@@ -51,29 +60,31 @@ export default function Food() {
               ))}
             </div>
           )}
-          <div className="text-sm text-ink-2">Hydratation : {c.dayPlan.hydration}</div>
+          <div className="text-sm text-ink-2">Hydratation : {dayPlan.hydration}</div>
           <div className="flex flex-wrap gap-2"><EvidenceBadge id="protein_intake" /><EvidenceBadge id={n.explanation.evidenceId} /><EvidenceBadge id="hydration" /></div>
           {!simple && <p className="text-xs text-ink-3">Dépense estimée ≈ {n.tdee} kcal (±10 %). Point de départ corrigé par tes tendances réelles, pas une vérité.</p>}
         </Card>
         <Card accent="nutrition" kicker="Assiette recomposition" title="Les proportions qui comptent">
-          <PlateDiagram plate={c.dayPlan.plate} size={180} />
+          <PlateDiagram plate={dayPlan.plate} size={180} />
           <p className="text-sm text-ink-2">Les proportions s’adaptent : jour d’entraînement → plus de glucides ; repos, fatigue, faim → plus de volume végétal et de protéines.</p>
         </Card>
       </section>
 
       <section className="rise rise-2">
-        <div className="flex items-center justify-between mb-3"><h2 className="font-bold text-lg">Ton plan de repas</h2><button className="btn btn-secondary btn-sm" onClick={() => setLogOpen(true)}>Noter ma journée</button></div>
+        <div className="flex items-center justify-between mb-3 gap-3"><div><h2 className="font-bold text-lg">Ton plan de repas</h2><p className="text-xs text-ink-2">Un menu différent chaque jour, jamais la même idée deux jours de suite. Pas envie ? « Une autre idée ».</p></div><button className="btn btn-secondary btn-sm shrink-0" onClick={() => setLogOpen(true)}>Noter ma journée</button></div>
         <div className="grid md:grid-cols-2 gap-4">
-          {c.dayPlan.meals.map((m) => (
-            <Card key={m.id} title={m.name} kicker={m.timing} right={!simple ? <span className="text-xs tnum text-ink-3">{Math.round(m.macros.kcal)} kcal · P {Math.round(m.macros.p)} · G {Math.round(m.macros.c)} · L {Math.round(m.macros.f)}</span> : undefined}>
+          {dayPlan.meals.map((m) => (
+            <Card key={m.id} title={m.title} kicker={`${m.name} · ${m.timing}`} right={<div className="flex items-center gap-1">{(variants[m.id] || swaps[m.id]?.length) ? <button className="btn btn-ghost btn-sm" onClick={() => reset(m.id)} title="Revenir au repas proposé"><Undo2 size={14} /></button> : null}<button className="btn btn-secondary btn-sm" onClick={() => shuffle(m.id)} title="Changer ce repas au hasard, mêmes apports"><Shuffle size={14} /> Changer</button></div>}>
+              {(() => { const o = original(m.id); if (!o || o.title === m.title && !swaps[m.id]?.length) return null; const cmp = sameBenefits(o.macros, m.macros); return <div className={cx('text-xs rounded-lg px-2.5 py-1.5 inline-flex items-center gap-1.5', cmp.equivalent ? 'bg-[color-mix(in_srgb,var(--accent-vitality)_14%,transparent)]' : 'bg-[color-mix(in_srgb,var(--accent-recovery)_16%,transparent)]')}>{cmp.equivalent ? <Check size={12} /> : null}{cmp.equivalent ? 'Mêmes bénéfices' : 'Apports légèrement différents'} : protéines {cmp.dP >= 0 ? '+' : ''}{cmp.dP} g · {cmp.dKcal >= 0 ? '+' : ''}{cmp.dKcal} kcal par rapport au repas proposé</div>; })()}
+              {!simple && <div className="text-xs tnum text-ink-3">{Math.round(m.macros.kcal)} kcal · P {Math.round(m.macros.p)} g · G {Math.round(m.macros.c)} g · L {Math.round(m.macros.f)} g</div>}
               {simple ? (
-                <p className="text-sm">{m.simple}</p>
+                <div className="text-sm space-y-2"><p>{m.simple}</p><div className="flex flex-wrap gap-1">{m.items.filter((i) => i.role === 'protein' || i.role === 'carb' || i.role === 'dish').flatMap((it) => it.alternatives.slice(0, 2).map((a) => <button key={it.foodId + a.foodId} className="chip h-6 text-[11px]" onClick={() => setSwaps({ ...swaps, [m.id]: [...(swaps[m.id] ?? []), [it.foodId, a.foodId]] })}>⇄ {a.name.toLowerCase()}</button>))}</div></div>
               ) : (
                 <ul className="text-sm space-y-2">
                   {m.items.map((it) => (
                     <li key={it.foodId} className="flex flex-col gap-0.5">
                       <div className="flex justify-between gap-3"><span>{it.name}</span><span className="tnum font-medium shrink-0">{it.grams} g</span></div>
-                      {it.alternatives.length > 0 && <div className="text-xs text-ink-3">ou {it.alternatives.map((a) => `${a.name.toLowerCase()} ${a.grams} g`).join(' · ')}</div>}
+                      {it.alternatives.length > 0 && <div className="flex flex-wrap gap-1 text-xs">{it.alternatives.map((a) => <button key={a.foodId} className="chip h-6 text-[11px]" onClick={() => setSwaps({ ...swaps, [m.id]: [...(swaps[m.id] ?? []), [it.foodId, a.foodId]] })} title="Remplacer, mêmes apports">⇄ {a.name.toLowerCase()} {a.grams} g</button>)}</div>}
                     </li>
                   ))}
                 </ul>

@@ -46,7 +46,7 @@ apps/mobile/               Expo Router — 5 onglets branchés sur le même mote
 |---|---|
 | `scores.ts` | Body Composition Score (taille, force, poids *contextualisé*, régularité, sommeil, énergie, photos), Vitality Score, Recovery Score → readiness |
 | `nutrition/` | TDEE estimé, cyclage entraînement/repos, protéines 1,6–2,4 g/kg, plafond de déficit 0,7 %/sem, plan de repas concret (base internationale incl. Afrique de l'Ouest), assiette, mode simple/précis, « ton plat habituel », évaluation du jeûne |
-| `training/` | Programmes 2–6 séances (full body → PPL), biais selon objectifs visuels, exclusion par limitation, double progression, deload, autorégulation par readiness, douleur → arrêt |
+| `training/` | Programmes 2–6 séances, type choisi selon niveau, objectif et préférence (corps entier, haut/bas, PPL), biais selon objectifs visuels, exclusion par limitation, double progression, deload, autorégulation, douleur → arrêt ; bibliothèque d'exercices (étapes, erreurs, substituts) ; `analyze.ts` note un programme importé et peut le substituer au programme généré |
 | `adaptation/` | Weekly Review (fonctionne / bloque / change / **ne change pas**), Plateau Detector multi-signaux, Life Mode (restaurant, voyage, Ramadan…), alertes utiles, 1–3 micro-habitudes |
 | `evidence.ts` | Evidence Layer : chaque affirmation a un niveau (solide / probable / incertain / approche) et des repères bibliographiques ; fiches « approches populaires vs données » |
 | `coach/` | Context pack (mémoire du coach), prompt système contraint, coach à règles déterministe |

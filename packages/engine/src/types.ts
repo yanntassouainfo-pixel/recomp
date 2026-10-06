@@ -121,6 +121,8 @@ export interface Profile {
   splitPreference?: SplitStyle;
   /** Objectif de poids facultatif (kg). Jamais central : un repère, pas une sentence. */
   targetWeightKg?: number | null;
+  /** Programme importé par l'utilisateur ; s'il est présent, il remplace le programme généré. */
+  customProgram?: import('./training/analyze').CustomProgram | null;
 }
 
 export type SplitStyle = 'auto' | 'full_body' | 'upper_lower' | 'ppl';

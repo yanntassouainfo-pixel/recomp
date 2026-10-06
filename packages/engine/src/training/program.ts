@@ -1,5 +1,6 @@
 import type { Profile, SplitStyle, VisualGoal } from '../types';
 import { candidates, EXERCISE_BY_ID, type Exercise, type MovementPattern } from './exercises';
+import { customToProgram } from './analyze';
 
 export interface PlannedExercise {
   exerciseId: string;
@@ -174,6 +175,7 @@ export function exerciseCount(sessionMinutes: number, mode: Profile['mode']): nu
 }
 
 export function generateProgram(profile: Profile): Program {
+  if (profile.customProgram && profile.customProgram.days.length > 0) return customToProgram(profile.customProgram, profile);
   const n = Math.min(6, Math.max(2, profile.sessionsPerWeek));
   const chosen = chooseSplitStyle(profile);
   const defaultStyle: Exclude<SplitStyle, 'auto'> = n <= 3 ? 'full_body' : n === 4 ? 'upper_lower' : n === 5 ? 'upper_lower' : 'ppl';

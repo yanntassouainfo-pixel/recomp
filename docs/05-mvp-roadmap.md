@@ -20,6 +20,9 @@
 | 15 | Vitality Score (+ Recovery Score) | ✅ |
 | + | Life Mode, Plateau Detector, Evidence Layer, Why Engine, Body Report mensuel | ✅ engine + web |
 | + | Programme périodisé 12 semaines par objectif, calendrier et planning hebdo | ✅ engine + web + mobile (résumé) |
+| + | Type de programme adaptatif (corps entier / haut-bas / PPL selon niveau, objectif, préférence), objectif de poids facultatif | ✅ engine + web |
+| + | Bibliothèque d'exercices illustrée (pictogramme, carte des muscles, exécution, erreurs, substituts, démo vidéo) | ✅ web |
+| + | Analyseur / import de programme : volume par muscle, fréquence, équilibre, verdict, adoption du programme | ✅ engine + web |
 | + | Mobile Expo : 5 onglets branchés sur l'engine (démo) | ✅ scaffold |
 
 ## V1.1

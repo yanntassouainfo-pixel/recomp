@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { Check, Replace } from 'lucide-react';
+import { BookOpen, Check, Replace } from 'lucide-react';
 import { EXERCISE_BY_ID, substitutesFor, type PerformanceLog, type SetLog, type WorkoutDay } from '@recomp/engine';
 import { Card } from '@/components/ui/Card';
 import { Segmented, Sheet } from '@/components/ui/Primitives';
@@ -60,7 +60,7 @@ export default function Train() {
                 const sets = logs[ex.exerciseId] ?? Array.from({ length: ex.sets }, () => ({ weightKg: t?.weightKg ?? 0, reps: 0, rir: ex.rirTarget }));
                 const setSets = (arr: SetLog[]) => setLogs({ ...logs, [ex.exerciseId]: arr });
                 return (
-                  <Card key={ex.exerciseId} accent="muscle" kicker={`Exercice ${i + 1}`} title={subId ? substitutesFor(ex.exerciseId, p.equipment, p.level, p.limitations.map((l) => l.region)).find((s) => s.id === subId)?.name : ex.name} right={<button className="btn btn-ghost btn-sm" onClick={() => setSubOpen(ex.exerciseId)}><Replace size={14} /> Remplacer</button>}>
+                  <Card key={ex.exerciseId} accent="muscle" kicker={`Exercice ${i + 1}`} title={subId ? substitutesFor(ex.exerciseId, p.equipment, p.level, p.limitations.map((l) => l.region)).find((s) => s.id === subId)?.name : ex.name} right={<div className="flex gap-1"><Link href={`/app/exercises?id=${subId ?? ex.exerciseId}`} className="btn btn-ghost btn-sm"><BookOpen size={14} /> Voir</Link><button className="btn btn-ghost btn-sm" onClick={() => setSubOpen(ex.exerciseId)}><Replace size={14} /> Remplacer</button></div>}>
                     <div className="flex flex-wrap items-center gap-2 text-sm">
                       <span className="chip pointer-events-none">{ex.sets} × {ex.repMin}–{ex.repMax} {ex.note === 'En secondes' ? 's' : 'reps'}</span>
                       <span className="chip pointer-events-none">RIR {ex.rirTarget}</span>
@@ -111,7 +111,7 @@ export default function Train() {
 
       {tab === 'program' && (
         <div className="space-y-4 rise">
-          <Card title={c.program.split} kicker="Ton programme" accent="muscle" right={<Link href="/app/profile" className="text-sm font-medium text-ink-2 hover:text-ink">Changer le type</Link>}>
+          <Card title={c.program.split} kicker="Ton programme" accent="muscle" right={<div className="flex gap-3 text-sm font-medium"><Link href="/app/profile" className="text-ink-2 hover:text-ink">Changer le type</Link><Link href="/app/program" className="text-ink-2 hover:text-ink">Importer le mien</Link></div>}>
             <p className="text-sm text-ink-2">{c.program.rationale}</p>
             <div className="flex flex-wrap gap-2"><EvidenceBadge id="volume_hypertrophy" /><EvidenceBadge id="progressive_overload" /><span className="chip pointer-events-none">≈ {c.program.weeklySetsPerMuscleApprox} séries / muscle / semaine</span></div>
             {c.program.honestNotes.map((n) => <p key={n} className="text-sm card-2 p-3">{n}</p>)}

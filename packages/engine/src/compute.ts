@@ -61,6 +61,11 @@ export interface ComputedState {
   };
 }
 
+/** Index de rotation des idées de repas : jours écoulés depuis 1970 (monotone, un nouveau menu chaque jour). */
+export function daySeed(iso: ISODate): number {
+  return Math.floor(Date.parse(iso + 'T00:00:00Z') / 86_400_000);
+}
+
 export function isTrainingDay(state: UserState, program: Program, today: ISODate, plan?: ProgramPlan): WorkoutDay | null {
   const planned = state.sessions.find((s) => s.date === today);
   if (planned) return program.days.find((d) => d.id === planned.workoutDayId) ?? program.days[0] ?? null;
@@ -103,7 +108,7 @@ export function computeState(state: UserState, today: ISODate): ComputedState {
     reviewAdjustment: review.energyAdjustment || undefined,
     maintenance: currentPhase?.nutritionMode === 'maintenance' ? currentPhase.name : undefined,
   });
-  const dayPlan = buildDayPlan(nutrition, state.profile, Number(today.replaceAll('-', '')) % 7);
+  const dayPlan = buildDayPlan(nutrition, state.profile, daySeed(today));
   const fasting = assessFasting(state, today, nutrition.proteinG);
 
   const phasedWorkout: WorkoutDay | null = todayWorkout && currentPhase

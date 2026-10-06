@@ -130,7 +130,7 @@ export function rulesCoach(question: string, state: UserState, c: ComputedState)
     const alt = meal.items.find((i) => i.role === 'protein')?.alternatives[0];
     const dish = p.foodCultures.includes('west_africa') ? TRADITIONAL_DISHES[2] : null;
     const habitual = dish ? adaptHabitualDish(dish.id, 'rice_white', c.nutrition, meal.share) : null;
-    return reply('what_to_eat', [c.nutrition.explanation.evidenceId, 'protein_distribution'], `${meal.name} (${c.brief.dayType === 'training' ? 'jour d’entraînement' : 'jour de repos'}) : ${items}.${alt ? ` Alternative : ${alt.name.toLowerCase()} ${alt.grams} g.` : ''}${meal.tip ? ' ' + meal.tip : ''}${habitual ? ` Tu préfères ton plat habituel ? ${dish!.name} : ${habitual.lines.slice(0, 2).join(' ')}` : ''}`);
+    return reply('what_to_eat', [c.nutrition.explanation.evidenceId, 'protein_distribution'], `${meal.name} (${c.brief.dayType === 'training' ? 'jour d’entraînement' : 'jour de repos'}) — ${meal.title} : ${items}.${alt ? ` Alternative : ${alt.name.toLowerCase()} ${alt.grams} g.` : ''}${meal.tip ? ' ' + meal.tip : ''}${habitual ? ` Tu préfères ton plat habituel ? ${dish!.name} : ${habitual.lines.slice(0, 2).join(' ')}` : ''}`);
   }
 
   // Jeûne

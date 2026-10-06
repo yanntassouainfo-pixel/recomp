@@ -20,6 +20,12 @@ import {
   buildProgramPlan,
   addDays,
   chooseSplitStyle,
+  analyzeProgram,
+  EXERCISES,
+  FOOD_BY_ID,
+  swapMealItem,
+  fitMealTo,
+  sameBenefits,
   assessWeightGoal,
   buildCalendar,
   phasesFor,
@@ -114,9 +120,9 @@ describe('nutrition engine', () => {
     expect(plan.totals.kcal).toBeGreaterThan(t.kcal * 0.8);
     expect(plan.totals.kcal).toBeLessThan(t.kcal * 1.25);
     const ids = plan.meals.flatMap((m) => m.items.map((i) => i.foodId));
-    const westAfrican = ['attieke', 'yam_boiled', 'cassava_boiled', 'foutou', 'plantain_boiled', 'maize_porridge', 'millet_couscous', 'smoked_fish', 'tilapia', 'mackerel', 'okra', 'leafy_greens', 'peanuts', 'palm_oil', 'papaya', 'mango'];
+    const westAfrican = ['attieke', 'yam_boiled', 'cassava_boiled', 'foutou', 'plantain_boiled', 'maize_porridge', 'millet_couscous', 'smoked_fish', 'tilapia', 'mackerel', 'okra', 'leafy_greens', 'peanuts', 'palm_oil', 'papaya', 'mango', 'yassa', 'ndole', 'egusi', 'okra_soup', 'fonio', 'gari', 'sorghum_porridge', 'black_eyed_peas', 'cassava_leaves', 'goat', 'guava', 'sauce_feuille', 'sauce_arachide', 'thieboudienne', 'sauce_graine', 'sauce_tomate_poisson'];
     expect(ids.some((id) => westAfrican.includes(id))).toBe(true);
-    for (const m of plan.meals) expect(m.items.some((i) => i.role === 'protein')).toBe(true);
+    for (const m of plan.meals) expect(m.items.some((i) => i.role === 'protein' || i.role === 'dish')).toBe(true);
   });
   it('adapte un plat habituel', () => {
     const t = computeNutritionTargets(state, TODAY, 'rest');
@@ -337,5 +343,112 @@ describe('adaptation du programme & objectif de poids', () => {
     const st: UserState = { ...buildDemoState(TODAY), profile: { ...base, targetWeightKg: 60, primaryGoal: 'fat_loss' } };
     expect(computeNutritionTargets(st, TODAY, 'rest').energyDeltaPct).toBe(0);
     expect(assessWeightGoal({ ...base, targetWeightKg: null }, 93, TODAY)).toBeNull();
+  });
+});
+
+describe('bibliothèque & analyseur de programme', () => {
+  const profile = buildDemoState(TODAY).profile;
+  it('chaque exercice a des étapes et des erreurs fréquentes', () => {
+    for (const ex of EXERCISES) {
+      expect(ex.steps?.length, ex.id).toBeGreaterThanOrEqual(2);
+      expect(ex.mistakes?.length, ex.id).toBeGreaterThanOrEqual(1);
+    }
+  });
+  it('un programme « bro split » haut du corps seul est mal noté, un full body équilibré bien noté', () => {
+    const bro = analyzeProgram({ name: 'Bro', days: [
+      { name: 'Pecs', weekday: 1, exercises: [{ exerciseId: 'bench_press', sets: 5, repMin: 6, repMax: 10 }, { exerciseId: 'db_bench', sets: 4, repMin: 8, repMax: 12 }, { exerciseId: 'chest_press_machine', sets: 4, repMin: 10, repMax: 15 }] },
+      { name: 'Bras', weekday: 3, exercises: [{ exerciseId: 'biceps_curl', sets: 6, repMin: 8, repMax: 12 }, { exerciseId: 'triceps_extension', sets: 6, repMin: 10, repMax: 15 }] },
+      { name: 'Épaules', weekday: 5, exercises: [{ exerciseId: 'overhead_press', sets: 5, repMin: 6, repMax: 10 }, { exerciseId: 'lateral_raise', sets: 5, repMin: 12, repMax: 20 }] },
+    ] }, profile);
+    expect(bro.score).toBeLessThan(50);
+    expect(bro.issues.some((i) => /Bas du corps/.test(i.text))).toBe(true);
+    expect(bro.issues.some((i) => /poussée/i.test(i.text) && /tirage/i.test(i.text))).toBe(true);
+    const good = analyzeProgram({ name: 'FB', days: [
+      { name: 'A', weekday: 1, exercises: [{ exerciseId: 'squat', sets: 4, repMin: 6, repMax: 10 }, { exerciseId: 'bench_press', sets: 4, repMin: 6, repMax: 10 }, { exerciseId: 'row_barbell', sets: 4, repMin: 8, repMax: 12 }, { exerciseId: 'plank', sets: 3, repMin: 30, repMax: 60 }] },
+      { name: 'B', weekday: 3, exercises: [{ exerciseId: 'romanian_deadlift', sets: 4, repMin: 8, repMax: 12 }, { exerciseId: 'overhead_press', sets: 4, repMin: 6, repMax: 10 }, { exerciseId: 'lat_pulldown', sets: 4, repMin: 8, repMax: 12 }, { exerciseId: 'lateral_raise', sets: 3, repMin: 12, repMax: 20 }] },
+      { name: 'C', weekday: 5, exercises: [{ exerciseId: 'split_squat', sets: 3, repMin: 8, repMax: 12 }, { exerciseId: 'db_bench', sets: 3, repMin: 8, repMax: 12 }, { exerciseId: 'seated_row', sets: 3, repMin: 8, repMax: 12 }, { exerciseId: 'leg_curl', sets: 3, repMin: 10, repMax: 15 }] },
+    ] }, profile);
+    expect(good.score).toBeGreaterThan(bro.score + 25);
+    expect(good.score).toBeGreaterThanOrEqual(70);
+  });
+  it('un programme importé remplace le programme généré', () => {
+    const custom = { name: 'Mon programme', days: [{ name: 'Jour 1', weekday: 2, exercises: [{ exerciseId: 'goblet_squat', sets: 3, repMin: 8, repMax: 12 }, { exerciseId: 'push_up', sets: 3, repMin: 8, repMax: 15 }] }] };
+    const prog = generateProgram({ ...profile, customProgram: custom });
+    expect(prog.split).toBe('Mon programme');
+    expect(prog.days[0]!.exercises.map((e) => e.exerciseId)).toEqual(['goblet_squat', 'push_up']);
+    expect(prog.days[0]!.weekday).toBe(2);
+  });
+});
+
+describe('variété des repas', () => {
+  it('7 jours consécutifs : idées et sources de protéines variées, jamais la même idée deux jours de suite', () => {
+    const st = buildDemoState(TODAY);
+    const t = computeNutritionTargets(st, TODAY, 'training');
+    const titles: string[][] = [];
+    const dinnerProteins = new Set<string>();
+    for (let d = 0; d < 7; d++) {
+      const plan = buildDayPlan(t, st.profile, 100 + d);
+      titles.push(plan.meals.map((m) => m.title));
+      const dinner = plan.meals.find((m) => m.id === 'dinner')!;
+      dinnerProteins.add(dinner.items.find((i) => i.role === 'protein' || i.role === 'dish')?.foodId ?? '');
+      for (const m of plan.meals) { expect(m.title.length).toBeGreaterThan(3); expect(m.items.some((i) => i.role === 'protein' || i.role === 'dish')).toBe(true); }
+      expect(plan.totals.p).toBeGreaterThan(t.proteinG * 0.8);
+      expect(plan.totals.kcal).toBeLessThan(t.kcal * 1.3);
+    }
+    for (let d = 1; d < 7; d++) for (let m = 0; m < 4; m++) expect(titles[d]![m]).not.toBe(titles[d - 1]![m]);
+    expect(dinnerProteins.size).toBeGreaterThanOrEqual(4);
+    expect(new Set(titles.map((x) => x[1])).size).toBeGreaterThanOrEqual(5); // déjeuners
+  });
+  it('« une autre idée » change le repas', () => {
+    const st = buildDemoState(TODAY);
+    const t = computeNutritionTargets(st, TODAY, 'rest');
+    const a = buildDayPlan(t, st.profile, 42);
+    const b = buildDayPlan(t, st.profile, 42, { dinner: 1 });
+    expect(b.meals.find((m) => m.id === 'dinner')!.title).not.toBe(a.meals.find((m) => m.id === 'dinner')!.title);
+    expect(b.meals.find((m) => m.id === 'lunch')!.title).toBe(a.meals.find((m) => m.id === 'lunch')!.title);
+  });
+  it('végétarien ouest-africain : aucun aliment carné, idées disponibles', () => {
+    const st = buildDemoState(TODAY);
+    const pr = { ...st.profile, dietaryPreferences: ['vegetarian'] };
+    const t = computeNutritionTargets({ ...st, profile: pr }, TODAY, 'training');
+    for (let d = 0; d < 5; d++) {
+      const plan = buildDayPlan(t, pr, 200 + d);
+      for (const m of plan.meals) for (const it of m.items) { const f = FOOD_BY_ID[it.foodId]!; expect(f.tags.includes('meat') || f.tags.includes('fish'), it.foodId).toBe(false); }
+    }
+  });
+});
+
+describe('changer un repas, mêmes bénéfices', () => {
+  it('remplacer la source de protéines conserve les protéines du repas', () => {
+    const st = buildDemoState(TODAY);
+    const t = computeNutritionTargets(st, TODAY, 'training');
+    const plan = buildDayPlan(t, st.profile, 300);
+    const dinner = plan.meals.find((m) => m.id === 'dinner')!;
+    const prot = dinner.items.find((i) => i.role === 'protein' && i.alternatives.length > 0) ?? dinner.items.find((i) => i.role === 'protein')!;
+    const alt = prot.alternatives[0]?.foodId ?? 'chicken_breast';
+    const swapped = swapMealItem(dinner, prot.foodId, alt);
+    expect(swapped.items.some((i) => i.foodId === alt)).toBe(true);
+    expect(Math.abs(swapped.macros.p - dinner.macros.p)).toBeLessThan(Math.max(8, dinner.macros.p * 0.15));
+  });
+  it('sameBenefits accepte ±12 % de protéines', () => {
+    expect(sameBenefits({ kcal: 800, p: 50, c: 80, f: 20, fiber: 5 }, { kcal: 850, p: 54, c: 70, f: 25, fiber: 4 }).equivalent).toBe(true);
+    expect(sameBenefits({ kcal: 800, p: 50, c: 80, f: 20, fiber: 5 }, { kcal: 1100, p: 30, c: 70, f: 25, fiber: 4 }).equivalent).toBe(false);
+  });
+});
+
+describe('recalage « mêmes bénéfices »', () => {
+  it('un repas tiré au hasard recalé reste à ±12 % de protéines et ±15 % d’énergie dans la grande majorité des cas', () => {
+    const st = buildDemoState(TODAY);
+    const t = computeNutritionTargets(st, TODAY, 'training');
+    const base = buildDayPlan(t, st.profile, 500);
+    let ok = 0, n = 0;
+    for (let v = 1; v <= 12; v++) {
+      const alt = buildDayPlan(t, st.profile, 500, { dinner: v, lunch: v });
+      for (const id of ['dinner', 'lunch']) {
+        const o = base.meals.find((m) => m.id === id)!; const m = fitMealTo(alt.meals.find((x) => x.id === id)!, o.macros);
+        n++; if (sameBenefits(o.macros, m.macros).equivalent) ok++;
+      }
+    }
+    expect(ok / n).toBeGreaterThanOrEqual(0.8);
   });
 });
