@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { BookOpen, Check, Replace } from 'lucide-react';
-import { EXERCISE_BY_ID, substitutesFor, type PerformanceLog, type SetLog, type WorkoutDay } from '@recomp/engine';
+import { EXERCISE_BY_ID, EXERCISE_PHOTOS, SITE_PHOTOS, substitutesFor, type PerformanceLog, type SetLog, type WorkoutDay } from '@recomp/engine';
+import { PhotoFrame } from '@/components/ui/Photo';
 import { Card } from '@/components/ui/Card';
 import { Segmented, Sheet } from '@/components/ui/Primitives';
 import { EvidenceBadge, WhyButton } from '@/components/ui/Evidence';
@@ -50,6 +51,11 @@ export default function Train() {
 
       {tab === 'today' && (
         <>
+          {session && !session.replacedByRecovery && (
+            <PhotoFrame photo={EXERCISE_PHOTOS[session.exercises[0]?.exerciseId ?? ''] ?? SITE_PHOTOS.rack} ratio="21/9" overlay className="rise">
+              <div className="absolute left-5 bottom-5 right-5 flex flex-wrap items-end justify-between gap-3"><div><div className="label">{day?.focus}</div><div className="font-semibold text-lg">{session.exercises.length} exercices · {session.estimatedMinutes} min · RIR {session.exercises[0]?.rirTarget}</div></div></div>
+            </PhotoFrame>
+          )}
           {c.deload.recommended && <div className="card-2 border-l-4 border-l-[var(--accent-recovery)] px-4 py-3 text-sm">Semaine allégée recommandée : {c.deload.reasons.join(' ')} <EvidenceBadge id="deload" className="ml-2" /></div>}
           {todaySession?.completed && <div className="card-2 border-l-4 border-l-[var(--accent-vitality)] px-4 py-3 text-sm flex items-center gap-2"><Check size={16} /> Séance du jour enregistrée. Les prochaines cibles sont déjà recalculées.</div>}
           {session && !session.replacedByRecovery ? (

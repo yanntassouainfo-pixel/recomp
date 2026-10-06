@@ -40,6 +40,7 @@ interface Store {
   removeLifeEvent: (id: string) => void;
   addPhoto: (p: BodyPhotoMeta) => void;
   setPhotoAssessment: (id: string, a: BodyPhotoMeta['selfAssessment']) => void;
+  setPhotoAnalysis: (id: string, analysis: BodyPhotoMeta['analysis']) => void;
   addDecision: (d: CoachDecision) => void;
   pushChat: (m: ChatMsg) => void;
   clearChat: () => void;
@@ -70,6 +71,7 @@ export const useStore = create<Store>()(
       addLifeEvent: (e) => { const s = get().state; if (!s) return; set({ state: { ...s, lifeEvents: [...s.lifeEvents, e] } }); },
       removeLifeEvent: (id) => { const s = get().state; if (!s) return; set({ state: { ...s, lifeEvents: s.lifeEvents.filter((e) => e.id !== id) } }); },
       addPhoto: (p) => { const s = get().state; if (!s) return; set({ state: { ...s, photos: [...s.photos, p] } }); },
+      setPhotoAnalysis: (id, analysis) => { const s = get().state; if (!s) return; set({ state: { ...s, photos: s.photos.map((p) => (p.id === id ? { ...p, analysis } : p)) } }); },
       setPhotoAssessment: (id, a) => { const s = get().state; if (!s) return; set({ state: { ...s, photos: s.photos.map((p) => (p.id === id ? { ...p, selfAssessment: a } : p)) } }); },
       addDecision: (d) => { const s = get().state; if (!s) return; set({ state: { ...s, decisions: [...s.decisions, d] } }); },
       pushChat: (m) => set({ chat: [...get().chat, m].slice(-60) }),

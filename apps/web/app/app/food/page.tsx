@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
-import { adaptHabitualDish, APPROACHES, FOODS, TRADITIONAL_DISHES, buildDayPlan, daySeed, fitMealTo, sameBenefits, swapMealItem, type Meal, type NutritionPrecision } from '@recomp/engine';
+import { adaptHabitualDish, APPROACHES, FOODS, TRADITIONAL_DISHES, buildDayPlan, daySeed, fitMealTo, mealPhotoFor, sameBenefits, swapMealItem, type Meal, type NutritionPrecision } from '@recomp/engine';
+import { PhotoFrame } from '@/components/ui/Photo';
 import { Check, Shuffle, Undo2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { PlateDiagram } from '@/components/ui/PlateDiagram';
@@ -72,6 +73,9 @@ export default function Food() {
 
       <section className="rise rise-2">
         <div className="flex items-center justify-between mb-3 gap-3"><div><h2 className="font-bold text-lg">Ton plan de repas</h2><p className="text-xs text-ink-2">Un menu différent chaque jour, jamais la même idée deux jours de suite. Pas envie ? « Une autre idée ».</p></div><button className="btn btn-secondary btn-sm shrink-0" onClick={() => setLogOpen(true)}>Noter ma journée</button></div>
+        <PhotoFrame photo={mealPhotoFor(p.foodCultures[0] ?? 'europe', 'main')} ratio="21/9" overlay className="mb-4">
+          <div className="absolute left-5 bottom-5 right-5"><div className="label">Ta cuisine</div><div className="font-semibold text-lg">Des portions, pas des interdits. Ton plat habituel a sa place.</div></div>
+        </PhotoFrame>
         <div className="grid md:grid-cols-2 gap-4">
           {dayPlan.meals.map((m) => (
             <Card key={m.id} title={m.title} kicker={`${m.name} · ${m.timing}`} right={<div className="flex items-center gap-1">{(variants[m.id] || swaps[m.id]?.length) ? <button className="btn btn-ghost btn-sm" onClick={() => reset(m.id)} title="Revenir au repas proposé"><Undo2 size={14} /></button> : null}<button className="btn btn-secondary btn-sm" onClick={() => shuffle(m.id)} title="Changer ce repas au hasard, mêmes apports"><Shuffle size={14} /> Changer</button></div>}>

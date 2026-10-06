@@ -2,8 +2,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Check } from 'lucide-react';
-import { addDays, type DailyCheckin } from '@recomp/engine';
+import { addDays, SITE_PHOTOS, type DailyCheckin } from '@recomp/engine';
 import { Card, Stat, accentColor } from '@/components/ui/Card';
+import { PhotoFrame } from '@/components/ui/Photo';
+
 import { ScoreRing } from '@/components/ui/ScoreRing';
 import { Sparkline } from '@/components/ui/Charts';
 import { Alerts, Sheet, SliderField, TrendBadge } from '@/components/ui/Primitives';
@@ -97,8 +99,13 @@ export default function Home() {
       <header className="rise">
         <div className="label">{fmtDateLong(today())}</div>
         <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mt-1">{c.brief.greeting} {c.brief.dayType === 'training' ? 'Jour d’entraînement.' : 'Jour de repos.'}</h1>
-        <p className="text-ink-2 mt-2 max-w-2xl">{c.bcs.headline}</p>
+        <p className="text-ink-2 mt-2 max-w-2xl">{c.bcs.headline} <Link href="/app/trajectory" className="underline text-ink">Voir où ça mène dans 6 mois</Link>.</p>
       </header>
+      {c.brief.dayType === 'rest' && (
+        <PhotoFrame photo={SITE_PHOTOS.walk} ratio="21/9" overlay className="rise">
+          <div className="absolute left-5 bottom-5 right-5"><div className="label">Jour de repos</div><div className="font-semibold text-lg">Marche, mobilité, un vrai dîner. Le muscle se construit entre les séances.</div></div>
+        </PhotoFrame>
+      )}
 
       <Alerts alerts={c.alerts.slice(0, 2)} />
 

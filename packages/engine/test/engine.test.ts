@@ -25,6 +25,7 @@ import {
   FOOD_BY_ID,
   swapMealItem,
   fitMealTo,
+  projectLongTerm,
   sameBenefits,
   assessWeightGoal,
   buildCalendar,
@@ -450,5 +451,32 @@ describe('recalage « mêmes bénéfices »', () => {
       }
     }
     expect(ok / n).toBeGreaterThanOrEqual(0.8);
+  });
+});
+
+describe('projection long terme', () => {
+  it('6 et 12 mois : couloir prudent, blocs successifs, jalons', () => {
+    const st = buildDemoState(TODAY);
+    const p6 = projectLongTerm(st, TODAY, 6);
+    const p12 = projectLongTerm(st, TODAY, 12, 'consistent');
+    expect(p6.points.length).toBe(27);
+    expect(p12.points.length).toBe(53);
+    expect(p6.summary.waistDeltaCm).toBeLessThan(0);
+    expect(p6.summary.waistDeltaCm).toBeGreaterThan(-15);
+    expect(Math.abs(p6.summary.weightDeltaKg)).toBeLessThan(6);
+    expect(p6.summary.strengthDeltaPct).toBeGreaterThan(0);
+    expect(p12.blocks.length).toBeGreaterThanOrEqual(4);
+    expect(p12.milestones.some((m) => m.kind === 'report')).toBe(true);
+    expect(p12.adherenceAssumed).toBe(0.9);
+    // décroissance : la perte de taille des 13 dernières semaines < celle des 13 premières
+    const first = p12.points[13]!.waistCm - p12.points[0]!.waistCm;
+    const last = p12.points[52]!.waistCm - p12.points[39]!.waistCm;
+    expect(Math.abs(last)).toBeLessThan(Math.abs(first));
+  });
+  it('objectif de poids : jalon atteint et poids plafonné', () => {
+    const st = buildDemoState(TODAY);
+    const p = projectLongTerm({ ...st, profile: { ...st.profile, primaryGoal: 'fat_loss', targetWeightKg: 88 } }, TODAY, 12);
+    expect(p.milestones.some((m) => m.kind === 'goal')).toBe(true);
+    expect(Math.min(...p.points.map((x) => x.weightKg))).toBeGreaterThanOrEqual(88);
   });
 });

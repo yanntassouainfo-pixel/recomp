@@ -1,7 +1,10 @@
 'use client';
 import { useRef, useState } from 'react';
+import { checkPhotoQuality, dataUrlToBase64, type LocalPhotoCheck } from '@/lib/photoQuality';
+import { Sparkles, ShieldCheck } from 'lucide-react';
 import { Camera, Plus } from 'lucide-react';
-import type { BodyPhotoMeta, Measurement } from '@recomp/engine';
+import { SITE_PHOTOS, type BodyPhotoMeta, type Measurement, type PhotoAnalysis } from '@recomp/engine';
+import { PhotoFrame } from '@/components/ui/Photo';
 import { Card, Stat, accentColor } from '@/components/ui/Card';
 import { ScoreRing } from '@/components/ui/ScoreRing';
 import { TrendChart } from '@/components/ui/Charts';
@@ -17,6 +20,11 @@ export default function Body() {
   const addMeasurement = useStore((s) => s.addMeasurement);
   const addPhoto = useStore((s) => s.addPhoto);
   const setPhotoAssessment = useStore((s) => s.setPhotoAssessment);
+  const setPhotoAnalysis = useStore((s) => s.setPhotoAnalysis);
+  const updateProfile = useStore((s) => s.updateProfile);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiMsg, setAiMsg] = useState<string | null>(null);
+  const [localCheck, setLocalCheck] = useState<LocalPhotoCheck | null>(null);
   const [open, setOpen] = useState(false);
   const [m, setM] = useState<Measurement>({ date: today(), protocolOk: true });
   const [view, setView] = useState<BodyPhotoMeta['view']>('front');
@@ -46,6 +54,29 @@ export default function Body() {
     } catch {
       setPhotoError('Impossible de lire cette image.');
     }
+  };
+
+  const isStatic = process.env.NEXT_PUBLIC_STATIC === '1';
+  const analyze = async () => {
+    if (!lastPhoto) return;
+    setAiMsg(null);
+    if (!state.profile.consents.photoAiAnalysis) { setAiMsg('Active d’abord le consentement « Analyse IA des photos » ci-dessous : la photo est envoyée à un modèle de vision tiers, uniquement pour cette analyse, sans être conservée.'); return; }
+    setAnalyzing(true);
+    try {
+      const lc = await checkPhotoQuality(lastPhoto.uri); setLocalCheck(lc);
+      if (isStatic) { setAiMsg('Version de démonstration statique : l’analyse par IA tourne sur la version serveur (clé IA côté serveur). Le contrôle qualité ci-dessous, lui, est fait sur ton appareil.'); return; }
+      const cur = dataUrlToBase64(lastPhoto.uri); if (!cur) { setAiMsg('Format de photo non pris en charge.'); return; }
+      const prevPhoto = photos.length > 1 ? photos[photos.length - 2] : undefined;
+      const prev = prevPhoto ? dataUrlToBase64(prevPhoto.uri) : null;
+      const weeks = prevPhoto ? Math.round((Date.parse(lastPhoto.date) - Date.parse(prevPhoto.date)) / (7 * 86_400_000)) : null;
+      const res = await fetch((process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/api/vision', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ consent: true, current: { ...cur, view: lastPhoto.view, date: lastPhoto.date }, previous: prev && prevPhoto ? { ...prev, view: prevPhoto.view, date: prevPhoto.date } : undefined, profile: { sex: state.profile.sex, age: state.profile.age, heightCm: state.profile.heightCm, primaryGoal: state.profile.primaryGoal, visualGoals: state.profile.visualGoals, fatStorage: state.profile.fatStorage }, context: { waistDeltaCm: c.review.metrics.waistDelta, weightDeltaKg: c.review.metrics.weightDelta, strengthDeltaPct: c.review.metrics.strengthDeltaPct, weeksBetween: weeks } }) });
+      const r = (await res.json()) as { ok?: boolean; refused?: boolean; refusalReason?: string; analysis?: PhotoAnalysis; error?: string };
+      if (r.ok && r.analysis) { setPhotoAnalysis(lastPhoto.id, r.analysis); setAiMsg(null); }
+      else if (r.refused) setAiMsg(`Analyse refusée : ${r.refusalReason}`);
+      else if (r.error === 'no_vision_provider') setAiMsg('Aucune clé IA avec vision n’est configurée sur ce serveur (ANTHROPIC_API_KEY ou OPENAI_API_KEY dans .env.local).');
+      else setAiMsg('L’analyse a échoué. Réessaie dans un instant.');
+    } catch { setAiMsg('Impossible de joindre le serveur d’analyse.'); }
+    finally { setAnalyzing(false); }
   };
 
   const otherMeasures: [keyof Measurement, string][] = [['chestCm', 'Poitrine'], ['shouldersCm', 'Épaules'], ['hipsCm', 'Hanches'], ['armCm', 'Bras'], ['thighCm', 'Cuisse'], ['calfCm', 'Mollet'], ['neckCm', 'Cou']];
@@ -125,9 +156,9 @@ export default function Body() {
               {first && lastPhoto && first.id !== lastPhoto.id ? (
                 <BeforeAfterSlider before={first.uri} after={lastPhoto.uri} labels={[fmtDate(first.date), fmtDate(lastPhoto.date)]} />
               ) : (
-                <div className="aspect-[3/4] max-h-[420px] card-2 grid place-items-center text-center p-6">
-                  <div><Camera className="mx-auto mb-3 text-ink-3" /><div className="font-medium">{first ? 'Une seule photo pour l’instant' : 'Aucune photo'}</div><p className="text-sm text-ink-2 mt-1 max-w-xs">{first ? 'La comparaison apparaîtra avec la prochaine, dans 4 semaines.' : 'Facultatif, mais c’est souvent là que le « wow » arrive : « mon poids n’a presque pas changé… mais mon corps a changé ».'}</p></div>
-                </div>
+                <PhotoFrame photo={SITE_PHOTOS.portraitDark} ratio="3/4" overlay className="max-h-[420px]">
+                  <div className="absolute inset-x-5 bottom-5"><Camera className="mb-2 text-white/80" /><div className="font-semibold text-white">{first ? 'Une seule photo pour l’instant' : 'Aucune photo'}</div><p className="text-sm text-white/80 mt-1 max-w-xs">{first ? 'La comparaison apparaîtra avec la prochaine, dans 4 semaines.' : 'Facultatif, mais c’est souvent là que le « wow » arrive : « mon poids n’a presque pas changé… mais mon corps a changé ».'}</p></div>
+                </PhotoFrame>
               )}
             </div>
             <div className="space-y-3">
@@ -141,11 +172,41 @@ export default function Body() {
                   <Segmented value={lastPhoto.selfAssessment ?? 'same'} onChange={(v) => setPhotoAssessment(lastPhoto.id, v as BodyPhotoMeta['selfAssessment'])} options={[{ value: 'worse', label: 'Moins bien' }, { value: 'same', label: 'Pareil' }, { value: 'better', label: 'Mieux' }]} />
                 </div>
               )}
-              <div className="text-xs text-ink-3 flex flex-col gap-1.5"><EvidenceBadge id="photo_bodyfat" /><span>Jamais de % de masse grasse déduit d’une photo. Les photos sont réduites (1280 px) et stockées uniquement dans ce navigateur, non chiffrées : ne les ajoute que sur un appareil personnel. Elles ne sont jamais envoyées au coach.</span></div>
+              {lastPhoto && (
+                <div className="card-2 p-3 space-y-2">
+                  <button className="btn btn-primary w-full" disabled={analyzing} onClick={analyze}><Sparkles size={16} /> {analyzing ? 'Analyse en cours…' : lastPhoto.analysis ? 'Relancer l’analyse IA' : 'Analyser cette photo (IA)'}</button>
+                  <label className="flex items-start gap-2 text-xs text-ink-2"><input type="checkbox" className="mt-0.5" checked={state.profile.consents.photoAiAnalysis} onChange={(e) => updateProfile({ consents: { ...state.profile.consents, photoAiAnalysis: e.target.checked } })} /> J’autorise l’envoi de cette photo à un modèle de vision tiers pour une analyse qualitative. Jamais de % de masse grasse, photo non conservée côté serveur.</label>
+                  {aiMsg && <p className="text-xs text-ink-2">{aiMsg}</p>}
+                </div>
+              )}
+              <div className="text-xs text-ink-3 flex flex-col gap-1.5"><EvidenceBadge id="photo_bodyfat" /><span>Jamais de % de masse grasse déduit d’une photo. Les photos sont réduites (1280 px) et stockées uniquement dans ce navigateur, non chiffrées : ne les ajoute que sur un appareil personnel. Elles ne sont envoyées au modèle de vision que si tu lances l’analyse.</span></div>
             </div>
           </div>
         </Card>
       </section>
+
+      {(localCheck || lastPhoto?.analysis) && (
+        <section className="grid lg:grid-cols-2 gap-4 rise rise-4">
+          {localCheck && (
+            <Card kicker="Contrôle qualité (sur ton appareil)" title="Cette photo est-elle exploitable ?" accent="body">
+              <ul className="space-y-1.5 text-sm">{localCheck.verdicts.map((v) => <li key={v.key} className="flex items-start gap-2"><span className={cx('mt-1.5 w-2 h-2 rounded-full shrink-0', v.level === 'good' ? 'bg-[var(--accent-vitality)]' : v.level === 'ok' ? 'bg-[var(--accent-recovery)]' : 'bg-[var(--accent-muscle)]')} />{v.text}</li>)}</ul>
+              <div className="text-xs text-ink-3 tnum">Luminosité {localCheck.brightness}/255 · contraste {localCheck.contrast} · {localCheck.width}×{localCheck.height}</div>
+            </Card>
+          )}
+          {lastPhoto?.analysis && (() => { const a = lastPhoto.analysis!; const qLabel = { poor: 'faible', ok: 'correct', good: 'bon' } as const; const areaLabel: Record<string, string> = { posture: 'Posture', shoulders: 'Épaules', chest: 'Poitrine', arms: 'Bras', abdomen: 'Abdomen', waist: 'Taille', back: 'Dos', legs: 'Jambes', symmetry: 'Symétrie', definition: 'Définition', overall: 'Vue d’ensemble' }; return (
+            <Card kicker={`Analyse IA · ${new Date(a.analyzedAt).toLocaleDateString('fr-FR')} · ${a.model}`} title="Ce que l’œil du coach observe" accent="fat" right={<EvidenceBadge id="photo_bodyfat" />} className="lg:col-span-1">
+              <div className="flex flex-wrap gap-1.5 text-xs">{(['lighting', 'framing', 'pose'] as const).map((k) => <span key={k} className="chip pointer-events-none h-6 text-[11px]">{({ lighting: 'Lumière', framing: 'Cadrage', pose: 'Pose' } as const)[k]} : {qLabel[a.quality[k]]}</span>)}<span className="chip pointer-events-none h-6 text-[11px]">{a.quality.comparable ? 'Comparable' : 'Peu comparable'}</span></div>
+              {a.quality.notes.length > 0 && <p className="text-xs text-ink-2">{a.quality.notes.join(' ')}</p>}
+              <ul className="space-y-2 text-sm">{a.observations.map((o, i) => <li key={i} className="flex items-start gap-2"><span className="chip pointer-events-none h-6 text-[11px] shrink-0">{areaLabel[o.area] ?? o.area}</span><span>{o.note} <span className="text-ink-3 text-xs">(confiance {o.confidence === 'high' ? 'élevée' : o.confidence === 'medium' ? 'moyenne' : 'faible'})</span></span></li>)}</ul>
+              {a.comparison && <div className="card-2 p-3 text-sm space-y-1.5"><div className="font-semibold">Par rapport à la photo précédente</div><p>{a.comparison.summary}</p>{a.comparison.changes.map((o, i) => <p key={i} className="text-ink-2">· {o.note}</p>)}{a.comparison.caveats.length > 0 && <p className="text-xs text-ink-3">Biais possibles : {a.comparison.caveats.join(' ')}</p>}</div>}
+              {a.suggestions.length > 0 && <div><div className="label mb-1">Pistes à confirmer par les mesures</div><ul className="list-disc pl-5 text-sm space-y-1">{a.suggestions.map((x) => <li key={x}>{x}</li>)}</ul></div>}
+              {a.safetyFlags.length > 0 && <div className="card-2 border-l-4 border-l-[var(--danger)] px-3 py-2 text-sm flex items-start gap-2"><ShieldCheck size={16} className="mt-0.5 shrink-0" /><span>{a.safetyFlags.join(' ')} Un professionnel de santé est la bonne personne pour en parler.</span></div>}
+              <div><div className="label mb-1">Ce que l’IA ne dit pas</div><ul className="list-disc pl-5 text-xs text-ink-2 space-y-0.5">{a.limits.map((x) => <li key={x}>{x}</li>)}</ul></div>
+              {a.nextPhotoTips.length > 0 && <div><div className="label mb-1">Prochaine photo</div><ul className="list-disc pl-5 text-xs text-ink-2 space-y-0.5">{a.nextPhotoTips.map((x) => <li key={x}>{x}</li>)}</ul></div>}
+            </Card>
+          ); })()}
+        </section>
+      )}
 
       <Sheet open={open} onClose={() => setOpen(false)} title="Mesures du jour">
         <div className="grid grid-cols-2 gap-3 text-sm">

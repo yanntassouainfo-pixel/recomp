@@ -10,9 +10,18 @@ export interface CompletionOptions {
   temperature?: number;
 }
 
+export interface VisionImage {
+  /** base64 sans préfixe data: */
+  data: string;
+  mediaType: 'image/jpeg' | 'image/png' | 'image/webp';
+  label?: string;
+}
+
 export interface LLMProvider {
   readonly id: string;
   complete(system: string, messages: ChatMessage[], opts?: CompletionOptions): Promise<string>;
+  /** complétion multimodale (images + texte) ; absent si le fournisseur ne gère pas la vision */
+  completeVision?(system: string, images: VisionImage[], prompt: string, opts?: CompletionOptions): Promise<string>;
 }
 
 export type Intent = 'conversation' | 'nutrition' | 'training' | 'analysis' | 'vision' | 'safety';

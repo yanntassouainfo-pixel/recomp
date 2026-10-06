@@ -2,7 +2,8 @@
 import { Suspense, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ExternalLink, Search } from 'lucide-react';
-import { EXERCISES, MUSCLE_LABEL, PATTERN_LABEL, demoVideoUrl, substitutesFor, type Equipment, type Exercise, type Muscle, type MovementPattern } from '@recomp/engine';
+import { EXERCISES, EXERCISE_PHOTOS, MUSCLE_LABEL, PATTERN_LABEL, demoVideoUrl, substitutesFor, type Equipment, type Exercise, type Muscle, type MovementPattern } from '@recomp/engine';
+import { PhotoFrame } from '@/components/ui/Photo';
 import { BodyMap, Pictogram } from '@/components/ui/Anatomy';
 import { Card } from '@/components/ui/Card';
 import { Chip, Segmented, Sheet } from '@/components/ui/Primitives';
@@ -56,7 +57,7 @@ function Exercises() {
           const risky = e.stress.some((r) => excluded.includes(r));
           return (
             <button key={e.id} onClick={() => setOpen(e)} className={cx('card p-4 text-left flex gap-4 items-start hover:shadow-md transition-shadow', risky && 'opacity-60')}>
-              <Pictogram pattern={e.pattern} size={64} />
+              {EXERCISE_PHOTOS[e.id] ? <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-surface-2"><img src={EXERCISE_PHOTOS[e.id]!.url} alt="" loading="lazy" className="w-full h-full object-cover" style={{ filter: 'saturate(0.88)' }} /></div> : <Pictogram pattern={e.pattern} size={64} />}
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2"><div className="font-semibold leading-tight">{e.name}</div>{inProgram.has(e.id) && <span className="chip pointer-events-none text-[10px] h-6 shrink-0">Ton programme</span>}</div>
                 <div className="text-xs text-ink-2 mt-1">{PATTERN_LABEL[e.pattern]} · {e.muscles.slice(0, 3).map((m) => MUSCLE_LABEL[m]).join(', ')}</div>
@@ -71,6 +72,7 @@ function Exercises() {
       <Sheet open={Boolean(open)} onClose={() => setOpen(null)} title={open?.name}>
         {open && (
           <div className="space-y-4">
+            {EXERCISE_PHOTOS[open.id] && <PhotoFrame photo={EXERCISE_PHOTOS[open.id]!} ratio="16/9" />}
             <div className="flex flex-col sm:flex-row gap-4 items-start">
               <div className="card-2 p-3 flex items-center justify-center"><Pictogram pattern={open.pattern} size={110} /></div>
               <div className="flex-1 space-y-2 text-sm">
@@ -88,7 +90,7 @@ function Exercises() {
               <div className="flex flex-wrap gap-2 mt-1">{substitutesFor(open.id, p.equipment, p.level, excluded).map((s) => <button key={s.id} className="chip" onClick={() => setOpen(s)}>{s.name}</button>)}{substitutesFor(open.id, p.equipment, p.level, excluded).length === 0 && <span className="text-sm text-ink-3">Aucun avec ton matériel.</span>}</div>
             </div>
             <a href={demoVideoUrl(open)} target="_blank" rel="noreferrer" className="btn btn-secondary w-full"><ExternalLink size={16} /> Voir une démonstration vidéo</a>
-            <p className="text-xs text-ink-3">Les illustrations sont schématiques. En cas de doute sur ta technique, une séance avec un coach en salle vaut mieux qu’une vidéo.</p>
+            <p className="text-xs text-ink-3">Photos d’illustration (banque d’images) : elles montrent le mouvement, pas forcément la position idéale. Le pictogramme et les étapes font foi. En cas de doute, une séance avec un coach en salle vaut mieux qu’une vidéo.</p>
           </div>
         )}
       </Sheet>

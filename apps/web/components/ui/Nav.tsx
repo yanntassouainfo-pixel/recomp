@@ -2,13 +2,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Dumbbell, UtensilsCrossed, Scan, MessageCircle, BarChart3, UserRound, CalendarDays, MoreHorizontal, X, BookOpen } from 'lucide-react';
+import { Home, Dumbbell, UtensilsCrossed, Scan, MessageCircle, BarChart3, UserRound, CalendarDays, MoreHorizontal, X, BookOpen, TrendingUp } from 'lucide-react';
 import { cx } from '@/lib/format';
 import { ThemeToggle } from './ThemeToggle';
 
 const ITEMS = [
   { href: '/app', label: 'Aujourd’hui', short: 'Accueil', icon: Home },
   { href: '/app/plan', label: 'Planning', short: 'Plan', icon: CalendarDays },
+  { href: '/app/trajectory', label: 'Trajectoire', short: 'Trajectoire', icon: TrendingUp },
   { href: '/app/train', label: 'Entraînement', short: 'Séance', icon: Dumbbell },
   { href: '/app/exercises', label: 'Exercices', short: 'Exercices', icon: BookOpen },
   { href: '/app/food', label: 'Nutrition', short: 'Assiette', icon: UtensilsCrossed },
@@ -18,7 +19,7 @@ const ITEMS = [
   { href: '/app/profile', label: 'Profil', short: 'Profil', icon: UserRound },
 ];
 
-const NAV_COLORS: Record<string, string> = { '/app': 'var(--accent-vitality)', '/app/plan': 'var(--accent-body)', '/app/train': 'var(--accent-muscle)', '/app/exercises': 'var(--accent-muscle)', '/app/program': 'var(--accent-muscle)', '/app/food': 'var(--accent-nutrition)', '/app/body': 'var(--accent-fat)', '/app/coach': 'var(--accent-body)', '/app/review': 'var(--accent-consistency)', '/app/profile': 'var(--accent-recovery)' };
+const NAV_COLORS: Record<string, string> = { '/app': 'var(--accent-vitality)', '/app/plan': 'var(--accent-body)', '/app/trajectory': 'var(--accent-fat)', '/app/train': 'var(--accent-muscle)', '/app/exercises': 'var(--accent-muscle)', '/app/program': 'var(--accent-muscle)', '/app/food': 'var(--accent-nutrition)', '/app/body': 'var(--accent-fat)', '/app/coach': 'var(--accent-body)', '/app/review': 'var(--accent-consistency)', '/app/profile': 'var(--accent-recovery)' };
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();

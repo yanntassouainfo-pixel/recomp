@@ -22,7 +22,7 @@ Le socle est bon : moteur TypeScript pur et testé, garde-fous produit réelleme
 | Moussa M8 | Contraste `--ink-3` relevé (clair et sombre) | Fait |
 | Moussa M9 | Modales : rôle dialog, Échap, focus initial, défilement verrouillé ; focus visible | Fait |
 | Moussa m1, m2, m3, m4, m5 | CI avec tests et audit ; dépendances inutilisées retirées ; `error.tsx`, `not-found.tsx` ; textes FR ; labels ; theme-color | Fait |
-| Moussa écarts 3, 4 | Profil progressif (zones sensibles, aliments évités, traits) ; consentement photos marqué « à venir » | Fait |
+| Moussa écarts 3, 4 | Profil progressif (zones sensibles, aliments évités, traits) ; analyse IA des photos livrée (route `/api/vision`, consentement explicite, garde-fous) | Fait |
 | Sekou E4 / Aicha H4 | Promesses de l'UI corrigées ; pages Confidentialité et Mentions légales ; liens en pied de page et dans l'onboarding | Fait (responsable du traitement à compléter) |
 | Sekou E5 | Consentement données de santé séparé, horodaté | Fait |
 | Sekou M2, M3 | SQL : `search_path`, `revoke/grant`, export complet, limites de bucket | Fait |

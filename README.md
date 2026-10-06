@@ -27,6 +27,7 @@ Sans clé IA, le **coach à règles** répond déjà aux situations types. Pour 
 - **En local** : copier `apps/web/.env.example` en `apps/web/.env.local` et renseigner `ANTHROPIC_API_KEY=sk-ant-…`. Relancer `npm run dev`. Le fichier est ignoré par git : la clé ne sera jamais poussée.
 - **En production** : la clé doit rester côté serveur. GitHub Pages est un hébergement statique sans serveur, donc **aucune clé n'y est possible** : la démo publique utilise le coach déterministe. Pour la conversation libre par IA, déployer `apps/web` sur un hébergeur avec serveur (Vercel, Netlify, Cloudflare, VPS) et déclarer `ANTHROPIC_API_KEY` dans ses variables d'environnement.
 - **Jamais** dans le code, dans Builder, ni dans une variable `NEXT_PUBLIC_*` (celles-ci finissent dans le bundle public).
+- La même clé active l'**analyse IA des photos** (page Transformation → « Analyser cette photo ») : la photo est envoyée au modèle de vision uniquement pour l'analyse, avec consentement explicite, et n'est pas conservée côté serveur. Sur GitHub Pages, seul le contrôle qualité local est disponible.
 - Avant d'ouvrir l'IA à de vrais utilisateurs : voir `docs/audit-oya/03-securite-sekou.md` (authentification, rate-limit, consentement « coach IA tiers »).
 
 ## Structure
@@ -51,6 +52,9 @@ apps/mobile/               Expo Router — 5 onglets branchés sur le même mote
 | `evidence.ts` | Evidence Layer : chaque affirmation a un niveau (solide / probable / incertain / approche) et des repères bibliographiques ; fiches « approches populaires vs données » |
 | `coach/` | Context pack (mémoire du coach), prompt système contraint, coach à règles déterministe |
 | `report.ts` | Body Report mensuel : « voici ce que nous avons appris sur ton corps ce mois-ci » |
+| `plan/projection.ts` | Trajectoire 6 / 12 mois : couloir prudent (rendements décroissants, adhérence, phases de maintenance), blocs successifs, jalons, objectif de poids |
+| `packages/ai/src/vision.ts` | Analyse IA des photos : prompt de vision contraint (observations qualitatives, jamais de % de masse grasse ni de diagnostic), parsing JSON validé, garde-fous de sortie, comparaison entre deux clichés avec biais possibles |
+| `media.ts` | Photos d'illustration (Unsplash, crédits) pour les exercices et le site ; à remplacer par des photos propres ou générées |
 
 ## Garde-fous
 

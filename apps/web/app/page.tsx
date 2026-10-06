@@ -6,7 +6,8 @@ import { useStore } from '@/lib/store';
 import { ArrowRight, Sparkles, Check, Mail } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { EvidenceBadge } from '@/components/ui/Evidence';
-import { EVIDENCE } from '@recomp/engine';
+import { EVIDENCE, SITE_PHOTOS } from '@recomp/engine';
+import { PhotoFrame } from '@/components/ui/Photo';
 
 const PILLARS: [string, string, string, string][] = [
   ['01', 'Composition', 'Graisse, masse maigre, mensurations, évolution visuelle.', 'var(--accent-fat)'],
@@ -87,7 +88,11 @@ export default function Landing() {
           <p className="text-xs text-ink-3 mt-4">Pas de carte bancaire. Rien ne quitte ton navigateur. Démo : 8 semaines de données simulées.</p>
           <div className="mt-6 max-w-md"><Waitlist compact /></div>
         </div>
-        <div className="card p-6 md:p-8 rise rise-2">
+        <div className="space-y-4 rise rise-2">
+        <PhotoFrame photo={SITE_PHOTOS.heroWoman} ratio="16/10" priority overlay>
+          <div className="absolute left-5 bottom-5 right-5"><div className="label">Pas de bodybuilder huilé</div><div className="font-semibold">Des corps réels, des salles de quartier, des progrès mesurés.</div></div>
+        </PhotoFrame>
+        <div className="card p-6 md:p-8">
           <div className="label mb-3">Trois trajectoires, une balance aveugle</div>
           <div className="space-y-3">
             {[
@@ -102,6 +107,7 @@ export default function Landing() {
             ))}
           </div>
           <p className="text-sm text-ink-2 mt-5">RECOMP mesure tour de taille, force, énergie, sommeil, récupération et régularité. Et sait quand ne rien changer.</p>
+        </div>
         </div>
       </section>
 
@@ -138,6 +144,8 @@ export default function Landing() {
             <p className="text-ink-2 mt-4">La plupart des apps ne connaissent que le poulet-riz-brocoli. RECOMP connaît l’attiéké, le foutou, le thiéboudienne, le tô, la sauce feuilles, la sauce graine, et te dit comment ajuster ta portion, pas la supprimer.</p>
             <p className="text-sm text-ink-3 mt-3">Base alimentaire : Afrique de l’Ouest, Maghreb, Europe, Moyen-Orient, Asie, Amérique latine. Préférences, allergies, halal, végétarien, sans lactose, sans gluten.</p>
           </div>
+          <div className="space-y-3">
+          <PhotoFrame photo={SITE_PHOTOS.yassa} ratio="4/3" />
           <div className="card-2 p-5 text-sm space-y-2">
             <div className="label">Exemple · jour de repos</div>
             <div className="font-semibold">Sauce arachide (mafé) avec riz</div>
@@ -148,6 +156,7 @@ export default function Landing() {
               <li>Une part de légumes ou de crudités à côté.</li>
             </ul>
           </div>
+          </div>
         </div>
       </section>
 
@@ -155,6 +164,11 @@ export default function Landing() {
       <section className="max-w-6xl mx-auto px-5 md:px-8 pb-16">
         <div className="label mb-2">Un coach qui sait attendre</div>
         <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight mb-6">Ta vie ne s’adapte pas au plan. C’est l’inverse.</h2>
+        <div className="grid md:grid-cols-3 gap-4 mb-4">
+          <PhotoFrame photo={SITE_PHOTOS.walk} ratio="4/3" />
+          <PhotoFrame photo={SITE_PHOTOS.boxing} ratio="4/3" />
+          <PhotoFrame photo={SITE_PHOTOS.sleep} ratio="4/3" />
+        </div>
         <div className="grid md:grid-cols-3 gap-4">
           {[
             ['Life Mode', 'Restaurant, voyage, Ramadan, semaine à 55 h, pas de salle : tu le déclares, le coach recompose le plan. Aucune compensation après un repas libre.', 'var(--accent-consistency)'],

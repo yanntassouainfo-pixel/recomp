@@ -233,6 +233,33 @@ export interface BodyPhotoMeta {
   uri: string; // data URL (démo) ou chemin storage
   /** auto-évaluation de l'utilisateur, facultative */
   selfAssessment?: 'worse' | 'same' | 'better';
+  /** analyse IA (observations qualitatives), si consentie et réalisée */
+  analysis?: PhotoAnalysis;
+}
+
+/** Observation IA : qualitative, prudente, jamais une mesure médicale. */
+export interface PhotoObservation {
+  area: 'posture' | 'shoulders' | 'chest' | 'arms' | 'abdomen' | 'waist' | 'back' | 'legs' | 'symmetry' | 'definition' | 'overall';
+  note: string;
+  confidence: 'low' | 'medium' | 'high';
+}
+
+export interface PhotoAnalysis {
+  analyzedAt: string;
+  model: string;
+  /** qualité du cliché pour une comparaison fiable */
+  quality: { lighting: 'poor' | 'ok' | 'good'; framing: 'poor' | 'ok' | 'good'; pose: 'poor' | 'ok' | 'good'; comparable: boolean; notes: string[] };
+  observations: PhotoObservation[];
+  /** comparaison avec une photo antérieure, si fournie */
+  comparison?: { summary: string; changes: PhotoObservation[]; caveats: string[] };
+  /** ce que l'IA refuse de dire et pourquoi */
+  limits: string[];
+  /** conseils pour la prochaine photo */
+  nextPhotoTips: string[];
+  /** priorités d'entraînement / posture suggérées, à confirmer par les mesures */
+  suggestions: string[];
+  /** signaux nécessitant une orientation professionnelle, le cas échéant */
+  safetyFlags: string[];
 }
 
 export interface CoachDecision {

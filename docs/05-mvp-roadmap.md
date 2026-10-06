@@ -23,13 +23,16 @@
 | + | Type de programme adaptatif (corps entier / haut-bas / PPL selon niveau, objectif, préférence), objectif de poids facultatif | ✅ engine + web |
 | + | Bibliothèque d'exercices illustrée (pictogramme, carte des muscles, exécution, erreurs, substituts, démo vidéo) | ✅ web |
 | + | Analyseur / import de programme : volume par muscle, fréquence, équilibre, verdict, adoption du programme | ✅ engine + web |
+| + | Trajectoire long terme : projection 6 / 12 mois (tour de taille, poids avec fourchette, force), blocs successifs, jalons, scénarios | ✅ engine + web |
+| + | Analyse IA des photos (version serveur) : qualité du cliché, posture, répartition, définition, symétrie, comparaison entre deux photos avec biais, limites explicites, pistes ; contrôle qualité local sur la version statique | ✅ ai + web |
+| + | Photos éditoriales (Unsplash, crédits) : landing, bandeaux, fiches d'exercices, nutrition, transformation ; direction artistique Zuri | ✅ web |
 | + | Mobile Expo : 5 onglets branchés sur l'engine (démo) | ✅ scaffold |
 
 ## V1.1
 Supabase branché (auth, RLS, storage), sync hors-ligne mobile, notifications intelligentes, export/suppression.
 
 ## V2
-Vision IA (observations photo prudentes), intégrations santé (Apple Health, Health Connect, Garmin, Oura, Withings), Personal Response Profile appris, Body Twin narratif, gamification adulte complète.
+Intégrations santé (Apple Health, Health Connect, Garmin, Oura, Withings), Personal Response Profile appris, Body Twin narratif, gamification adulte complète.
 
 ## V3
 Multi-langues complètes, bases alimentaires régionales enrichies (Maghreb, Asie du Sud-Est, Amérique latine), coaching humain hybride.

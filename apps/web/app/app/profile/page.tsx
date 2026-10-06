@@ -122,7 +122,7 @@ export default function Profile() {
             <button className="btn btn-ghost btn-sm text-[var(--danger)]" onClick={() => setConfirm(true)}><Trash2 size={14} /> Supprimer toutes mes données</button>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
-            <label className="flex items-center gap-2"><input type="checkbox" checked={p.consents.photoAiAnalysis} onChange={(e) => updateProfile({ consents: { ...p.consents, photoAiAnalysis: e.target.checked } })} /> Analyse IA des photos <span className="text-ink-3">(fonction à venir, rien n’est analysé aujourd’hui)</span></label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={p.consents.photoAiAnalysis} onChange={(e) => updateProfile({ consents: { ...p.consents, photoAiAnalysis: e.target.checked } })} /> Analyse IA des photos <span className="text-ink-3">(observations qualitatives par un modèle de vision, jamais de % de masse grasse ; disponible sur la version serveur)</span></label>
             <label className="flex items-center gap-2"><input type="checkbox" checked={p.consents.productImprovement} onChange={(e) => updateProfile({ consents: { ...p.consents, productImprovement: e.target.checked } })} /> Amélioration produit</label>
           </div>
         </Card>
