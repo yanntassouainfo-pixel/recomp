@@ -85,3 +85,8 @@ export const useStore = create<Store>()(
     },
   ),
 );
+
+/** Clé bêta (facultative) envoyée aux routes API quand le serveur l'exige. */
+export function betaHeaders(): Record<string, string> {
+  try { const k = localStorage.getItem('recomp-beta-key'); return k ? { 'x-recomp-beta-key': k } : {}; } catch { return {}; }
+}

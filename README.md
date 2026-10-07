@@ -30,6 +30,15 @@ Sans clé IA, le **coach à règles** répond déjà aux situations types. Pour 
 - La même clé active l'**analyse IA des photos** (page Transformation → « Analyser cette photo ») : la photo est envoyée au modèle de vision uniquement pour l'analyse, avec consentement explicite, et n'est pas conservée côté serveur. Sur GitHub Pages, seul le contrôle qualité local est disponible.
 - Avant d'ouvrir l'IA à de vrais utilisateurs : voir `docs/audit-oya/03-securite-sekou.md` (authentification, rate-limit, consentement « coach IA tiers »).
 
+## Déployer sur Vercel (version serveur : coach IA + analyse photo)
+
+1. Sur https://vercel.com/new, importer le dépôt GitHub `recomp`.
+2. **Root Directory** : `apps/web` (le `vercel.json` du dossier gère l'installation et le build depuis la racine du monorepo).
+3. **Environment Variables** : `ANTHROPIC_API_KEY` (obligatoire pour l'IA), `BETA_ACCESS_KEY` (recommandé : une phrase secrète ; les routes API la réclament, et tu la saisis dans Profil → Données & confidentialité), `NEXT_PUBLIC_SITE_URL` (l'URL Vercel).
+4. Deploy. Chaque push sur `main` redéploie.
+
+Protections actives sur les routes API : clé bêta, limitation de débit par adresse (60 questions / 10 min pour le coach, 12 analyses / 10 min pour les photos), validation stricte des entrées, photos jamais conservées. Avant d'ouvrir à de vrais utilisateurs : authentification par compte (voir `docs/audit-oya/03-securite-sekou.md`).
+
 ## Structure
 
 ```

@@ -12,7 +12,7 @@ import { BeforeAfterSlider } from '@/components/ui/BeforeAfter';
 import { Segmented, Sheet, TrendBadge } from '@/components/ui/Primitives';
 import { EvidenceBadge } from '@/components/ui/Evidence';
 import { useComputed } from '@/lib/useComputed';
-import { today, useStore } from '@/lib/store';
+import { betaHeaders, today, useStore } from '@/lib/store';
 import { cx, fmtDate } from '@/lib/format';
 
 export default function Body() {
@@ -69,10 +69,12 @@ export default function Body() {
       const prevPhoto = photos.length > 1 ? photos[photos.length - 2] : undefined;
       const prev = prevPhoto ? dataUrlToBase64(prevPhoto.uri) : null;
       const weeks = prevPhoto ? Math.round((Date.parse(lastPhoto.date) - Date.parse(prevPhoto.date)) / (7 * 86_400_000)) : null;
-      const res = await fetch((process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/api/vision', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ consent: true, current: { ...cur, view: lastPhoto.view, date: lastPhoto.date }, previous: prev && prevPhoto ? { ...prev, view: prevPhoto.view, date: prevPhoto.date } : undefined, profile: { sex: state.profile.sex, age: state.profile.age, heightCm: state.profile.heightCm, primaryGoal: state.profile.primaryGoal, visualGoals: state.profile.visualGoals, fatStorage: state.profile.fatStorage }, context: { waistDeltaCm: c.review.metrics.waistDelta, weightDeltaKg: c.review.metrics.weightDelta, strengthDeltaPct: c.review.metrics.strengthDeltaPct, weeksBetween: weeks } }) });
+      const res = await fetch((process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/api/vision', { method: 'POST', headers: { 'content-type': 'application/json', ...betaHeaders() }, body: JSON.stringify({ consent: true, current: { ...cur, view: lastPhoto.view, date: lastPhoto.date }, previous: prev && prevPhoto ? { ...prev, view: prevPhoto.view, date: prevPhoto.date } : undefined, profile: { sex: state.profile.sex, age: state.profile.age, heightCm: state.profile.heightCm, primaryGoal: state.profile.primaryGoal, visualGoals: state.profile.visualGoals, fatStorage: state.profile.fatStorage }, context: { waistDeltaCm: c.review.metrics.waistDelta, weightDeltaKg: c.review.metrics.weightDelta, strengthDeltaPct: c.review.metrics.strengthDeltaPct, weeksBetween: weeks } }) });
       const r = (await res.json()) as { ok?: boolean; refused?: boolean; refusalReason?: string; analysis?: PhotoAnalysis; error?: string };
       if (r.ok && r.analysis) { setPhotoAnalysis(lastPhoto.id, r.analysis); setAiMsg(null); }
       else if (r.refused) setAiMsg(`Analyse refusée : ${r.refusalReason}`);
+      else if (res.status === 401) setAiMsg('Ce serveur demande une clé d’accès bêta : renseigne-la dans Profil → Données & confidentialité.');
+      else if (res.status === 429) setAiMsg('Trop d’analyses en peu de temps. Réessaie dans quelques minutes.');
       else if (r.error === 'no_vision_provider') setAiMsg('Aucune clé IA avec vision n’est configurée sur ce serveur (ANTHROPIC_API_KEY ou OPENAI_API_KEY dans .env.local).');
       else setAiMsg('L’analyse a échoué. Réessaie dans un instant.');
     } catch { setAiMsg('Impossible de joindre le serveur d’analyse.'); }

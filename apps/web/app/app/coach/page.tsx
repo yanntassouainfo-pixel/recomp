@@ -4,7 +4,7 @@ import { Send, Trash2 } from 'lucide-react';
 import { rulesCoach, type EvidenceId } from '@recomp/engine';
 import { EvidenceBadge } from '@/components/ui/Evidence';
 import { useComputed } from '@/lib/useComputed';
-import { today, useStore } from '@/lib/store';
+import { betaHeaders, today, useStore } from '@/lib/store';
 import { cx } from '@/lib/format';
 
 const SUGGESTIONS = ['Je mange quoi ce soir ?', 'J’ai raté ma séance, je fais quoi ?', 'Je suis invité au restaurant', 'J’ai très faim aujourd’hui', 'Je pars en voyage pendant 5 jours', 'Je n’ai pas de poulet', 'Je peux manger du riz ?', 'Je suis fatigué, je m’entraîne quand même ?', 'Mon poids ne bouge plus depuis 3 semaines', 'Pourquoi plus de glucides aujourd’hui ?', 'Où j’en suis ?', 'Le jeûne intermittent, c’est pour moi ?'];
@@ -34,7 +34,9 @@ export default function Coach() {
       return;
     }
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/api/coach', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ question, state: { ...state, photos: state.photos.map((p) => ({ ...p, uri: '' })) }, today: today(), history: chat.slice(-8).map((m) => ({ role: m.role, content: m.content })) }) });
+      const res = await fetch((process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/api/coach', { method: 'POST', headers: { 'content-type': 'application/json', ...betaHeaders() }, body: JSON.stringify({ question, state: { ...state, photos: state.photos.map((p) => ({ ...p, uri: '' })) }, today: today(), history: chat.slice(-8).map((m) => ({ role: m.role, content: m.content })) }) });
+      if (res.status === 401) { pushChat({ role: 'assistant', content: 'Ce serveur demande une clé d’accès bêta. Renseigne-la dans Profil → Données & confidentialité.', meta: { source: 'serveur', evidenceIds: [] } }); setBusy(false); return; }
+      if (res.status === 429) { pushChat({ role: 'assistant', content: 'Trop de questions en peu de temps. Réessaie dans quelques minutes.', meta: { source: 'serveur', evidenceIds: [] } }); setBusy(false); return; }
       if (!res.ok) throw new Error('api');
       const a = (await res.json()) as { text: string; source: string; evidenceIds: string[]; providerId?: string };
       pushChat({ role: 'assistant', content: a.text, meta: { source: a.source === 'llm' ? `IA (${a.providerId})` : 'moteur', evidenceIds: a.evidenceIds } });

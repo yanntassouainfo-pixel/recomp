@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guard } from '@/lib/server/guard';
 import { z } from 'zod';
 import { computeState, type UserState } from '@recomp/engine';
 import { answerQuestion, providersFromEnv, type ChatMessage } from '@recomp/ai';
@@ -33,6 +34,8 @@ const Body = z.object({
  * consentement « coach IA tiers » vérifié avant tout appel LLM, rate-limit par utilisateur.
  */
 export async function POST(req: Request) {
+  const blocked = guard(req, 60);
+  if (blocked) return blocked;
   const len = Number(req.headers.get('content-length') ?? '0');
   if (len > MAX_BODY_BYTES) return NextResponse.json({ error: 'payload_too_large' }, { status: 413 });
   let json: unknown;
