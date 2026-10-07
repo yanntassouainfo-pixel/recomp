@@ -32,10 +32,11 @@ Sans clé IA, le **coach à règles** répond déjà aux situations types. Pour 
 
 ## Déployer sur Vercel (version serveur : coach IA + analyse photo)
 
-1. Sur https://vercel.com/new, importer le dépôt GitHub `recomp`.
-2. **Root Directory** : `apps/web` (le `vercel.json` du dossier gère l'installation et le build depuis la racine du monorepo).
-3. **Environment Variables** : `ANTHROPIC_API_KEY` (obligatoire pour l'IA), `BETA_ACCESS_KEY` (recommandé : une phrase secrète ; les routes API la réclament, et tu la saisis dans Profil → Données & confidentialité), `NEXT_PUBLIC_SITE_URL` (l'URL Vercel).
-4. Deploy. Chaque push sur `main` redéploie.
+Projet Vercel existant : équipe `oya4`, projet `recomp`, production sur https://recomp-ten-psi.vercel.app (Root Directory `apps/web`, Node 24 ; le `vercel.json` du dossier gère l'installation et le build depuis la racine du monorepo). `BETA_ACCESS_KEY` et `NEXT_PUBLIC_SITE_URL` sont déjà déclarées.
+
+- **Ajouter la clé IA** : Vercel → projet `recomp` → Settings → Environment Variables → `ANTHROPIC_API_KEY` (Production), puis Deployments → ⋯ → Redeploy. Sans elle, `/api/vision` répond `no_vision_provider` (503) et le coach utilise le moteur à règles.
+- **Déployer une nouvelle version** depuis la racine du dépôt : `npx vercel deploy --prod` (le dépôt GitHub n'est pas connecté à Vercel ; GitHub Pages reste déployé par l'action `pages.yml`).
+- **Côté client** : saisir la clé bêta dans Profil → Données & confidentialité, sinon les routes API répondent 401.
 
 Protections actives sur les routes API : clé bêta, limitation de débit par adresse (60 questions / 10 min pour le coach, 12 analyses / 10 min pour les photos), validation stricte des entrées, photos jamais conservées. Avant d'ouvrir à de vrais utilisateurs : authentification par compte (voir `docs/audit-oya/03-securite-sekou.md`).
 
