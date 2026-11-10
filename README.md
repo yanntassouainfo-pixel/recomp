@@ -40,6 +40,16 @@ Projet Vercel existant : équipe `oya4`, projet `recomp`, production sur https:/
 
 Protections actives sur les routes API : clé bêta, limitation de débit par adresse (60 questions / 10 min pour le coach, 12 analyses / 10 min pour les photos), validation stricte des entrées, photos jamais conservées. Avant d'ouvrir à de vrais utilisateurs : authentification par compte (voir `docs/audit-oya/03-securite-sekou.md`).
 
+## Application Mac (Dock)
+
+`apps/desktop` contient une petite app macOS native qui ouvre la version Vercel dans sa propre fenêtre, avec l'icône RECOMP. Les données restent sur le Mac, dans le conteneur de l'app. Elles sont séparées de celles du navigateur.
+
+```bash
+apps/desktop/build.sh
+```
+
+Le script compile l'app avec les outils Xcode en ligne de commande et l'installe dans `~/Applications/RECOMP.app`. Pour l'épingler : clic droit sur l'icône dans le Dock → Options → Garder dans le Dock. Une URL différente peut être passée en argument, par exemple `http://localhost:3000/app` en développement.
+
 ## Structure
 
 ```
